@@ -47,6 +47,27 @@ pub fn show(config: &Config) -> Result<()> {
         .unwrap_or("—");
     println!("  {:<20} {}", "default_template:".dimmed(), tmpl);
 
+    let shell = config
+        .default_shell
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("—");
+    println!("  {:<20} {}", "default_shell:".dimmed(), shell);
+
+    let shell_cfg = config
+        .copy_shell_config
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("—");
+    println!("  {:<20} {}", "shell_config:".dimmed(), shell_cfg);
+
+    let editor = config
+        .default_editor
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("—");
+    println!("  {:<20} {}", "default_editor:".dimmed(), editor);
+
     println!();
     Ok(())
 }

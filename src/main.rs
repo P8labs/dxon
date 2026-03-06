@@ -90,7 +90,7 @@ fn run() -> anyhow::Result<()> {
             commands::enter::run(&store, &name, &cmd)?;
         }
         Commands::Open { name, editor } => {
-            commands::open::run(&store, &name, editor.as_deref())?;
+            commands::open::run(&store, &mut cfg, &name, editor.as_deref())?;
         }
         Commands::Config { .. } | Commands::Template { .. } => unreachable!(),
     }

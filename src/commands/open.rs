@@ -3,6 +3,7 @@ use colored::Colorize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::config::Config;
 use crate::container::store::ContainerStore;
 use crate::user;
 
@@ -10,7 +11,12 @@ const EDITOR_CANDIDATES: &[&str] = &["code", "cursor", "zed"];
 
 const VSCODE_COMPAT: &[&str] = &["code", "cursor"];
 
-pub fn run(store: &ContainerStore, name: &str, editor_override: Option<&str>) -> Result<()> {
+pub fn run(
+    store: &ContainerStore,
+    cfg: &mut Config,
+    name: &str,
+    editor_override: Option<&str>,
+) -> Result<()> {
     let meta = store.load_meta(name)?;
     let rootfs = PathBuf::from(&meta.rootfs_path);
 
@@ -30,8 +36,15 @@ pub fn run(store: &ContainerStore, name: &str, editor_override: Option<&str>) ->
 
     let editor = if let Some(e) = editor_override {
         e.to_string()
+    } else if let Some(ref e) = cfg.default_editor.clone().filter(|s| !s.is_empty()) {
+        e.clone()
     } else {
-        detect_editor()?
+        let detected = detect_editor()?;
+        cfg.default_editor = Some(detected.clone());
+        if let Err(e) = cfg.save() {
+            eprintln!("{} could not save editor preference: {e}", "warn:".yellow());
+        }
+        detected
     };
 
     let editor_bin = editor.split_whitespace().next().unwrap_or("");

@@ -8,7 +8,7 @@ The main command is `dxon create`. At minimum you provide a name for the contain
 dxon create myenv
 ```
 
-This starts an interactive prompt where you choose the base distro and optionally a template.
+This starts an interactive prompt where you choose the base distro, shell, and optionally a template.
 
 ### Non-interactive creation
 
@@ -27,6 +27,8 @@ dxon create myenv --distro alpine --template nodejs
 | `--distro <name>` | Base distribution: `arch`, `debian`, or `alpine` |
 | `--template <name>` | Template name from the registry, a local file path, or a URL |
 | `--repo <url>` | Clone a git repository into the container after setup |
+| `--shell <name>` | Shell to install: `bash`, `zsh`, or `fish` |
+| `--shell-config <mode>` | Share host shell config: `copy` or `bind` |
 | `--trust`, `-y` | Skip confirmation prompts (including trust warnings for untrusted templates) |
 
 ### Example: clone a repo into a container
@@ -35,7 +37,35 @@ dxon create myenv --distro alpine --template nodejs
 dxon create myproject --distro arch --template rust --repo https://github.com/you/myproject
 ```
 
-The repository is cloned into `/root/` inside the container after setup completes.
+The repository is cloned into `/workspace` inside the container after setup completes.
+
+### Shell selection
+
+During `dxon create` you can choose which shell to install in the container: `bash`, `zsh`, or `fish`. The chosen shell becomes the default for `dxon enter`.
+
+```sh
+dxon create myenv --distro arch --shell zsh
+```
+
+### Sharing host shell config
+
+You can bring your host shell configuration into the container with `--shell-config`:
+
+| Mode | Behaviour |
+|---|---|
+| `copy` | Shell config files are copied into the container once at creation time. Paths referencing your home directory are rewritten to `/root`. |
+| `bind` | Shell config files are bind-mounted from the host every time you enter. Changes on the host are immediately reflected inside the container. |
+
+```sh
+dxon create myenv --distro arch --shell zsh --shell-config copy
+dxon create myenv --distro arch --shell zsh --shell-config bind
+```
+
+**Files copied/bound per shell:**
+
+- **bash** — `.profile`, `.bash_profile`, `.bash_login`, `.bashrc`, `.bash_aliases`, `.bash_logout`, `.inputrc`
+- **zsh** — `.zshenv`, `.zshrc`, `.zprofile`, `.zlogin`, `.zlogout`, `.inputrc` (respects `$ZDOTDIR`)
+- **fish** — `~/.config/fish/` directory (respects `$XDG_CONFIG_HOME`)
 
 ## Entering a container
 
@@ -43,7 +73,32 @@ The repository is cloned into `/root/` inside the container after setup complete
 dxon enter myenv
 ```
 
-This drops you into an interactive shell inside the container. The container environment matches what the template set up, including any environment variables defined in the template.
+This drops you into an interactive shell inside the container using the shell that was chosen at creation time. If no shell was configured, `bash` is used.
+
+## Opening a container in an editor
+
+```sh
+dxon open myenv
+```
+
+Opens the container's `/workspace` directory (or root filesystem if no workspace exists) in a supported code editor. Editors are detected automatically in this order: VS Code (`code`), Cursor (`cursor`), Zed (`zed`).
+
+To use a specific editor:
+
+```sh
+dxon open myenv --editor cursor
+dxon open myenv --editor zed
+```
+
+### VS Code / Cursor terminal integration
+
+When opening with VS Code or Cursor, dXon automatically writes a `.vscode/settings.json` inside the workspace that configures a **dXon** terminal profile. This profile runs `dxon enter <name>` so that every integrated terminal you open is already inside the container.
+
+The profile is set as the default terminal, so pressing `` Ctrl+` `` drops you directly into the container shell.
+
+### Zed
+
+Zed does not yet support automatic terminal profile injection. Use `dxon enter <name>` from a host terminal alongside Zed.
 
 ## Listing containers
 
@@ -71,7 +126,7 @@ Permanently removes the container and all its files. This cannot be undone.
 
 ## Running commands
 
-To run a single command inside a container without entering an interactive shell, use `dxon enter` with a `--` separator:
+To run a single command inside a container without entering an interactive shell:
 
 ```sh
 dxon enter myenv -- cargo build --release
@@ -82,13 +137,8 @@ dxon enter myenv -- cargo build --release
 Inspect the template registry:
 
 ```sh
-# List available templates
 dxon template list
-
-# Search for a template by keyword
 dxon template search nodejs
-
-# Refresh the local registry cache
 dxon template refresh
 ```
 
@@ -97,10 +147,7 @@ See [Registry](registry.md) for more.
 ## Configuration commands
 
 ```sh
-# Show current configuration
 dxon config show
-
-# Set a configuration value
 dxon config set containers_dir /data/dxon/containers
 ```
 

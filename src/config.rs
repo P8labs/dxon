@@ -10,9 +10,10 @@ pub struct Config {
     pub registry_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub copy_shell_config: Option<String>,
-    /// Default shell to install in new containers: "bash", "zsh", or "fish".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_shell: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_editor: Option<String>,
 }
 
 impl Config {
@@ -86,8 +87,9 @@ impl Config {
             "registry_url"      => self.registry_url      = opt,
             "copy_shell_config" => self.copy_shell_config = opt,
             "default_shell"     => self.default_shell     = opt,
+            "default_editor"    => self.default_editor    = opt,
             _ => anyhow::bail!(
-                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template, registry_url, copy_shell_config, default_shell"
+                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template, registry_url, copy_shell_config, default_shell, default_editor"
             ),
         }
         Ok(())
