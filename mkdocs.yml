@@ -1,0 +1,78 @@
+site_name: dXon
+site_description: dXon – lightweight development container manager
+site_url: https://p8labs.github.io/dxon
+
+repo_name: P8labs/dxon
+repo_url: https://github.com/P8labs/dxon
+edit_uri: https://github.com/P8labs/dxon/tree/master/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  favicon: assets/images/dxon.png
+  palette:
+    - scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  
+extra_css:
+  - stylesheets/extra.css
+
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - toc:
+      permalink: true
+
+nav:
+  - Introduction: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+
+  - Templates:
+      - Overview: templates.md
+      - Specification: template-spec.md
+
+  - Registry: registry.md
+  - Configuration: configuration.md
+  - Security: security.md
+
+
+extra:
+  version: 1.0

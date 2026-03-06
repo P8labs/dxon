@@ -1,0 +1,32 @@
+name: Deploy docs
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install MkDocs and Material theme
+        run: pip install mkdocs==1.6.0 mkdocs-material
+
+      - name: Build and deploy documentation
+        run: mkdocs gh-deploy --force

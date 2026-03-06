@@ -1,17 +1,19 @@
-# dxon
+# dXon
 
 small tool to spin up dev containers quickly. nothing fancy. just simple environments so your host system doesn't get polluted.
 
 the idea is pretty straightforward: instead of installing a bunch of language stuff directly on your machine, you create a container for it and work inside that. keeps things clean and reproducible.
 
-dxon uses system tools under the hood like `systemd-nspawn`, `pacstrap`, `debootstrap`, etc. so it's not trying to reinvent containers or anything. just making them easier to use for dev workflows.
+dXon uses system tools under the hood like `systemd-nspawn`, `pacstrap`, `debootstrap`, etc. so it's not trying to reinvent containers or anything. just making them easier to use for dev workflows.
 
 still pretty early stage. expect things to break sometimes.
+
+**[full documentation → https://p8labs.github.io/dxon](https://p8labs.github.io/dxon)**
 
 
 ## what it does
 
-right now dxon lets you:
+right now dXon lets you:
 
 - create development containers
 - delete containers
@@ -23,17 +25,13 @@ right now dxon lets you:
 containers are usually stored in:
 
 ```
-
 ~/.dxon/containers
-
 ```
 
 config lives here:
 
 ```
-
 ~/.config/dxon/config.toml
-
 ```
 
 you can change those if you want.
@@ -44,33 +42,25 @@ you can change those if you want.
 create a node container:
 
 ```
-
 dxon create node-dev --template node
-
 ```
 
 enter it:
 
 ```
-
 dxon enter node-dev
-
 ```
 
 list containers:
 
 ```
-
 dxon list
-
 ```
 
 remove one:
 
 ```
-
-dxon rm node-dev
-
+dxon delete node-dev
 ````
 
 nothing too magical.
@@ -79,7 +69,7 @@ nothing too magical.
 
 ## templates
 
-dxon environments are driven by templates. templates are just yaml files that describe:
+dXon environments are driven by templates. templates are just yaml files that describe:
 
 - base distro
 - packages to install
@@ -123,7 +113,7 @@ that's where common environments live:
 
 more will be added later probably.
 
-dxon can pull templates directly from there so you don't have to copy files around.
+dXon can pull templates directly from there so you don't have to copy files around.
 
 you can also write your own templates if you want.
 
@@ -132,7 +122,7 @@ you can also write your own templates if you want.
 
 sometimes docker is too heavy for quick dev environments. sometimes installing stuff directly on your system becomes messy.
 
-dxon is trying to be the middle ground:
+dXon is trying to be the middle ground:
 
 * lightweight containers
 * quick environment setup
@@ -157,7 +147,7 @@ but yeah, one step at a time.
 
 ## project
 
-dxon is built and maintained by **P8labs Team**.
+dXon is built and maintained by **P8labs Team**.
 
 it's an experiment right now but we'll see where it goes.
 

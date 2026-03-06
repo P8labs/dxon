@@ -1,0 +1,11 @@
+.md-footer-meta__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-right a {
+    margin-left: 16px;
+    text-decoration: none;
+    font-weight: 500;
+}
