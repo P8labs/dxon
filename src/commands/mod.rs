@@ -4,4 +4,5 @@ pub mod delete;
 pub mod enter;
 pub mod info;
 pub mod list;
+pub mod open;
 pub mod registry;

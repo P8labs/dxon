@@ -230,7 +230,6 @@ mod tests {
     fn list_skips_dirs_without_meta_json() {
         let dir = tempdir().unwrap();
         let store = ContainerStore::new(dir.path().to_path_buf()).unwrap();
-        // dir with no meta.json — simulates a partial/interrupted create
         std::fs::create_dir_all(store.container_dir("broken")).unwrap();
         store.create_dirs("valid").unwrap();
         let meta = ContainerMeta::new("valid", "debian", "/tmp/rootfs");

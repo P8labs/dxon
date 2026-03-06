@@ -20,6 +20,14 @@ pub fn run(store: &ContainerStore, name: &str, cmd: &[String]) -> Result<()> {
     }
 
     println!("{} entering {}…", "→".cyan(), name.bold());
-    enter(&rootfs, cmd)?;
+
+    let effective_cmd: Vec<String> = if cmd.is_empty() {
+        let shell = meta.config.shell.as_deref().unwrap_or("bash");
+        vec![format!("/bin/{shell}")]
+    } else {
+        cmd.to_vec()
+    };
+
+    enter(&rootfs, &effective_cmd, &meta.config.extra_args)?;
     Ok(())
 }

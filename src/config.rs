@@ -7,9 +7,12 @@ pub struct Config {
     pub containers_dir: Option<String>,
     pub default_distro: Option<String>,
     pub default_template: Option<String>,
-    /// Override the default template registry URL.
-    /// Defaults to `https://raw.githubusercontent.com/P8labs/dxon-registry/main`.
     pub registry_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub copy_shell_config: Option<String>,
+    /// Default shell to install in new containers: "bash", "zsh", or "fish".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_shell: Option<String>,
 }
 
 impl Config {
@@ -63,7 +66,6 @@ impl Config {
         default_containers_dir()
     }
 
-    /// Returns the active registry URL: the user-configured value or the default.
     pub fn effective_registry_url(&self) -> &str {
         self.registry_url
             .as_deref()
@@ -78,12 +80,14 @@ impl Config {
             Some(value.to_string())
         };
         match key {
-            "containers_dir"   => self.containers_dir   = opt,
-            "default_distro"   => self.default_distro   = opt,
-            "default_template" => self.default_template = opt,
-            "registry_url"     => self.registry_url     = opt,
+            "containers_dir"    => self.containers_dir    = opt,
+            "default_distro"    => self.default_distro    = opt,
+            "default_template"  => self.default_template  = opt,
+            "registry_url"      => self.registry_url      = opt,
+            "copy_shell_config" => self.copy_shell_config = opt,
+            "default_shell"     => self.default_shell     = opt,
             _ => anyhow::bail!(
-                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template, registry_url"
+                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template, registry_url, copy_shell_config, default_shell"
             ),
         }
         Ok(())

@@ -29,6 +29,13 @@ pub enum Commands {
         packages: Vec<String>,
         #[arg(long, short = 'y')]
         trust: bool,
+        /// Shell to install: bash, zsh, fish.
+        #[arg(long, value_name = "SHELL")]
+        shell: Option<String>,
+        /// Copy or bind-mount host shell config into the container.
+        /// Valid values: copy, bind.
+        #[arg(long, value_name = "MODE")]
+        shell_config: Option<String>,
     },
 
     Delete {
@@ -47,6 +54,12 @@ pub enum Commands {
         name: String,
         #[arg(last = true)]
         cmd: Vec<String>,
+    },
+
+    Open {
+        name: String,
+        #[arg(long, short, value_name = "BINARY")]
+        editor: Option<String>,
     },
 
     Config {

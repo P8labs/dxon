@@ -138,11 +138,15 @@ fn prompt_package_failure(
     }
 }
 
-pub fn enter(rootfs: &Path, cmd: &[String]) -> Result<()> {
+pub fn enter(rootfs: &Path, cmd: &[String], extra_args: &[String]) -> Result<()> {
     require_nspawn()?;
 
     let mut builder = crate::user::privileged_command("systemd-nspawn");
     builder.arg("-D").arg(rootfs);
+
+    for arg in extra_args {
+        builder.arg(arg);
+    }
 
     if !cmd.is_empty() {
         builder.arg("--").args(cmd);
