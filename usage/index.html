@@ -102,8 +102,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="dXon" class="md-header__button md-logo" aria-label="dXon" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/images/dxon_sqr.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -243,8 +242,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="dXon" class="md-nav__button md-logo" aria-label="dXon" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/images/dxon_sqr.png" alt="logo">
 
     </a>
     dXon
@@ -418,6 +416,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#shell-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharing-host-shell-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sharing host shell config
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -431,6 +451,45 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opening-a-container-in-an-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a container in an editor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Opening a container in an editor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vs-code-cursor-terminal-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VS Code / Cursor terminal integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -775,6 +834,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#shell-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharing-host-shell-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sharing host shell config
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -788,6 +869,45 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opening-a-container-in-an-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a container in an editor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Opening a container in an editor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vs-code-cursor-terminal-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VS Code / Cursor terminal integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -893,7 +1013,7 @@
 <p>The main command is <code>dxon create</code>. At minimum you provide a name for the container:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>dxon<span class="w"> </span>create<span class="w"> </span>myenv
 </code></pre></div>
-<p>This starts an interactive prompt where you choose the base distro and optionally a template.</p>
+<p>This starts an interactive prompt where you choose the base distro, shell, and optionally a template.</p>
 <h3 id="non-interactive-creation">Non-interactive creation<a class="headerlink" href="#non-interactive-creation" title="Permanent link">&para;</a></h3>
 <p>Use flags to skip the prompts:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>dxon<span class="w"> </span>create<span class="w"> </span>myenv<span class="w"> </span>--distro<span class="w"> </span>arch
@@ -922,6 +1042,14 @@
 <td>Clone a git repository into the container after setup</td>
 </tr>
 <tr>
+<td><code>--shell &lt;name&gt;</code></td>
+<td>Shell to install: <code>bash</code>, <code>zsh</code>, or <code>fish</code></td>
+</tr>
+<tr>
+<td><code>--shell-config &lt;mode&gt;</code></td>
+<td>Share host shell config: <code>copy</code> or <code>bind</code></td>
+</tr>
+<tr>
 <td><code>--trust</code>, <code>-y</code></td>
 <td>Skip confirmation prompts (including trust warnings for untrusted templates)</td>
 </tr>
@@ -930,45 +1058,83 @@
 <h3 id="example-clone-a-repo-into-a-container">Example: clone a repo into a container<a class="headerlink" href="#example-clone-a-repo-into-a-container" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>dxon<span class="w"> </span>create<span class="w"> </span>myproject<span class="w"> </span>--distro<span class="w"> </span>arch<span class="w"> </span>--template<span class="w"> </span>rust<span class="w"> </span>--repo<span class="w"> </span>https://github.com/you/myproject
 </code></pre></div>
-<p>The repository is cloned into <code>/root/</code> inside the container after setup completes.</p>
-<h2 id="entering-a-container">Entering a container<a class="headerlink" href="#entering-a-container" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv
+<p>The repository is cloned into <code>/workspace</code> inside the container after setup completes.</p>
+<h3 id="shell-selection">Shell selection<a class="headerlink" href="#shell-selection" title="Permanent link">&para;</a></h3>
+<p>During <code>dxon create</code> you can choose which shell to install in the container: <code>bash</code>, <code>zsh</code>, or <code>fish</code>. The chosen shell becomes the default for <code>dxon enter</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dxon<span class="w"> </span>create<span class="w"> </span>myenv<span class="w"> </span>--distro<span class="w"> </span>arch<span class="w"> </span>--shell<span class="w"> </span>zsh
 </code></pre></div>
-<p>This drops you into an interactive shell inside the container. The container environment matches what the template set up, including any environment variables defined in the template.</p>
+<h3 id="sharing-host-shell-config">Sharing host shell config<a class="headerlink" href="#sharing-host-shell-config" title="Permanent link">&para;</a></h3>
+<p>You can bring your host shell configuration into the container with <code>--shell-config</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>copy</code></td>
+<td>Shell config files are copied into the container once at creation time. Paths referencing your home directory are rewritten to <code>/root</code>.</td>
+</tr>
+<tr>
+<td><code>bind</code></td>
+<td>Shell config files are bind-mounted from the host every time you enter. Changes on the host are immediately reflected inside the container.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>dxon<span class="w"> </span>create<span class="w"> </span>myenv<span class="w"> </span>--distro<span class="w"> </span>arch<span class="w"> </span>--shell<span class="w"> </span>zsh<span class="w"> </span>--shell-config<span class="w"> </span>copy
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>dxon<span class="w"> </span>create<span class="w"> </span>myenv<span class="w"> </span>--distro<span class="w"> </span>arch<span class="w"> </span>--shell<span class="w"> </span>zsh<span class="w"> </span>--shell-config<span class="w"> </span><span class="nb">bind</span>
+</code></pre></div>
+<p><strong>Files copied/bound per shell:</strong></p>
+<ul>
+<li><strong>bash</strong> — <code>.profile</code>, <code>.bash_profile</code>, <code>.bash_login</code>, <code>.bashrc</code>, <code>.bash_aliases</code>, <code>.bash_logout</code>, <code>.inputrc</code></li>
+<li><strong>zsh</strong> — <code>.zshenv</code>, <code>.zshrc</code>, <code>.zprofile</code>, <code>.zlogin</code>, <code>.zlogout</code>, <code>.inputrc</code> (respects <code>$ZDOTDIR</code>)</li>
+<li><strong>fish</strong> — <code>~/.config/fish/</code> directory (respects <code>$XDG_CONFIG_HOME</code>)</li>
+</ul>
+<h2 id="entering-a-container">Entering a container<a class="headerlink" href="#entering-a-container" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv
+</code></pre></div>
+<p>This drops you into an interactive shell inside the container using the shell that was chosen at creation time. If no shell was configured, <code>bash</code> is used.</p>
+<h2 id="opening-a-container-in-an-editor">Opening a container in an editor<a class="headerlink" href="#opening-a-container-in-an-editor" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv
+</code></pre></div>
+<p>Opens the container's <code>/workspace</code> directory (or root filesystem if no workspace exists) in a supported code editor. Editors are detected automatically in this order: VS Code (<code>code</code>), Cursor (<code>cursor</code>), Zed (<code>zed</code>).</p>
+<p>To use a specific editor:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv<span class="w"> </span>--editor<span class="w"> </span>cursor
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv<span class="w"> </span>--editor<span class="w"> </span>zed
+</code></pre></div>
+<h3 id="vs-code-cursor-terminal-integration">VS Code / Cursor terminal integration<a class="headerlink" href="#vs-code-cursor-terminal-integration" title="Permanent link">&para;</a></h3>
+<p>When opening with VS Code or Cursor, dXon automatically writes a <code>.vscode/settings.json</code> inside the workspace that configures a <strong>dXon</strong> terminal profile. This profile runs <code>dxon enter &lt;name&gt;</code> so that every integrated terminal you open is already inside the container.</p>
+<p>The profile is set as the default terminal, so pressing <code>Ctrl+`</code> drops you directly into the container shell.</p>
+<h3 id="zed">Zed<a class="headerlink" href="#zed" title="Permanent link">&para;</a></h3>
+<p>Zed does not yet support automatic terminal profile injection. Use <code>dxon enter &lt;name&gt;</code> from a host terminal alongside Zed.</p>
 <h2 id="listing-containers">Listing containers<a class="headerlink" href="#listing-containers" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>dxon<span class="w"> </span>list
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>dxon<span class="w"> </span>list
 </code></pre></div>
 <p>Prints all containers with their name, base distro, and creation date.</p>
 <h2 id="inspecting-a-container">Inspecting a container<a class="headerlink" href="#inspecting-a-container" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>dxon<span class="w"> </span>info<span class="w"> </span>myenv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>dxon<span class="w"> </span>info<span class="w"> </span>myenv
 </code></pre></div>
 <p>Shows details about a container: base distro, template used, creation time, any environment variables, and the storage path.</p>
 <h2 id="deleting-a-container">Deleting a container<a class="headerlink" href="#deleting-a-container" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>dxon<span class="w"> </span>delete<span class="w"> </span>myenv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>dxon<span class="w"> </span>delete<span class="w"> </span>myenv
 </code></pre></div>
 <p>Permanently removes the container and all its files. This cannot be undone.</p>
 <h2 id="running-commands">Running commands<a class="headerlink" href="#running-commands" title="Permanent link">&para;</a></h2>
-<p>To run a single command inside a container without entering an interactive shell, use <code>dxon enter</code> with a <code>--</code> separator:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv<span class="w"> </span>--<span class="w"> </span>cargo<span class="w"> </span>build<span class="w"> </span>--release
+<p>To run a single command inside a container without entering an interactive shell:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv<span class="w"> </span>--<span class="w"> </span>cargo<span class="w"> </span>build<span class="w"> </span>--release
 </code></pre></div>
 <h2 id="template-commands">Template commands<a class="headerlink" href="#template-commands" title="Permanent link">&para;</a></h2>
 <p>Inspect the template registry:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># List available templates</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>dxon<span class="w"> </span>template<span class="w"> </span>list
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Search for a template by keyword</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>dxon<span class="w"> </span>template<span class="w"> </span>search<span class="w"> </span>nodejs
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Refresh the local registry cache</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>dxon<span class="w"> </span>template<span class="w"> </span>refresh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>dxon<span class="w"> </span>template<span class="w"> </span>list
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>dxon<span class="w"> </span>template<span class="w"> </span>search<span class="w"> </span>nodejs
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>dxon<span class="w"> </span>template<span class="w"> </span>refresh
 </code></pre></div>
 <p>See <a href="../registry/">Registry</a> for more.</p>
 <h2 id="configuration-commands">Configuration commands<a class="headerlink" href="#configuration-commands" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Show current configuration</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>dxon<span class="w"> </span>config<span class="w"> </span>show
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Set a configuration value</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>dxon<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>containers_dir<span class="w"> </span>/data/dxon/containers
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>dxon<span class="w"> </span>config<span class="w"> </span>show
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>dxon<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>containers_dir<span class="w"> </span>/data/dxon/containers
 </code></pre></div>
 <h2 id="global-flags">Global flags<a class="headerlink" href="#global-flags" title="Permanent link">&para;</a></h2>
 <table>

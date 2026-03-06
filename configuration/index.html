@@ -102,8 +102,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="dXon" class="md-header__button md-logo" aria-label="dXon" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/images/dxon_sqr.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -243,8 +242,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="dXon" class="md-nav__button md-logo" aria-label="dXon" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/images/dxon_sqr.png" alt="logo">
 
     </a>
     dXon
@@ -587,6 +585,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#default_distro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_distro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy_shell_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy_shell_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_template
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -720,6 +762,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#default_distro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_distro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy_shell_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy_shell_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_template
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -800,18 +886,37 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">registry_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://raw.githubusercontent.com/P8labs/dxon-registry/main/registry.json&quot;</span>
 </code></pre></div>
 <p>Default: the official dxon registry index.</p>
+<h3 id="default_distro"><code>default_distro</code><a class="headerlink" href="#default_distro" title="Permanent link">&para;</a></h3>
+<p>Pre-selects a base distribution in the interactive <code>dxon create</code> prompt.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">default_distro</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;arch&quot;</span>
+</code></pre></div>
+<p>Valid values: <code>arch</code>, <code>debian</code>, <code>alpine</code>.</p>
+<h3 id="default_shell"><code>default_shell</code><a class="headerlink" href="#default_shell" title="Permanent link">&para;</a></h3>
+<p>Pre-selects a shell in the interactive <code>dxon create</code> prompt.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">default_shell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;zsh&quot;</span>
+</code></pre></div>
+<p>Valid values: <code>bash</code>, <code>zsh</code>, <code>fish</code>.</p>
+<h3 id="copy_shell_config"><code>copy_shell_config</code><a class="headerlink" href="#copy_shell_config" title="Permanent link">&para;</a></h3>
+<p>Pre-selects the shell config sharing mode in the interactive <code>dxon create</code> prompt.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">copy_shell_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;copy&quot;</span>
+</code></pre></div>
+<p>Valid values: <code>copy</code>, <code>bind</code>. See <a href="../usage/#sharing-host-shell-config">Shell config sharing</a> for details on what each mode does.</p>
+<h3 id="default_template"><code>default_template</code><a class="headerlink" href="#default_template" title="Permanent link">&para;</a></h3>
+<p>Pre-selects a template in the interactive <code>dxon create</code> prompt.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">default_template</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;rust&quot;</span>
+</code></pre></div>
 <h2 id="full-default-configuration">Full default configuration<a class="headerlink" href="#full-default-configuration" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">containers_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/.dxon/containers&quot;</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">registry_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://raw.githubusercontent.com/P8labs/dxon-registry/main/registry.json&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">containers_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/.dxon/containers&quot;</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">registry_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://raw.githubusercontent.com/P8labs/dxon-registry/main/registry.json&quot;</span>
 </code></pre></div>
 <h2 id="example-move-container-storage">Example: move container storage<a class="headerlink" href="#example-move-container-storage" title="Permanent link">&para;</a></h2>
 <p>If you want to store containers on a different drive or partition:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">containers_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/data/dxon/containers&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">containers_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/data/dxon/containers&quot;</span>
 </code></pre></div>
 <p>Make sure the directory exists and is writable before creating any containers.</p>
 <h2 id="example-use-a-custom-registry">Example: use a custom registry<a class="headerlink" href="#example-use-a-custom-registry" title="Permanent link">&para;</a></h2>
 <p>To use a private or self-hosted template registry:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">registry_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://registy.example.com/dxon/registry.json&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">registry_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://registy.example.com/dxon/registry.json&quot;</span>
 </code></pre></div>
 <p>The registry endpoint must return a JSON index in the same format as the official registry. See <a href="../registry/">Registry</a> for details on the registry format.</p>
 
