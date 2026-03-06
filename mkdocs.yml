@@ -12,6 +12,7 @@ site_dir: site
 theme:
   name: material
   custom_dir: docs/overrides
+  logo: assets/images/dxon_sqr.png
   favicon: assets/images/dxon.png
   palette:
     - scheme: default
