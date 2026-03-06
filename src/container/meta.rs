@@ -18,6 +18,10 @@ pub struct ContainerMeta {
 pub struct ContainerConfig {
     pub env: HashMap<String, String>,
     pub extra_args: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell_config_mode: Option<String>,
 }
 
 impl ContainerMeta {

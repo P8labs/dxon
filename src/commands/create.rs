@@ -14,6 +14,7 @@ use crate::runtime::packages::translate_list;
 use crate::template;
 use crate::template::builtin;
 use crate::template::spec::{DxTemplate, Step};
+use crate::user;
 
 pub struct CreateArgs {
     pub name: Option<String>,
@@ -22,9 +23,11 @@ pub struct CreateArgs {
     pub repo: Option<String>,
     pub packages: Vec<String>,
     pub trust: bool,
+    pub shell: Option<String>,
+    pub shell_config: Option<String>,
 }
 
-pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()> {
+pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result<()> {
     require_nspawn()?;
 
     let theme = ColorfulTheme::default();
@@ -63,7 +66,7 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
     let distro = Distro::parse(&distro_str)?;
 
     let (bootstrap_tool, hint) = host.bootstrap_tool_for(&distro_str);
-    if !tool_available(bootstrap_tool) {
+    if !user::command_available(bootstrap_tool) {
         return Err(DxonError::MissingTool {
             tool: bootstrap_tool.to_string(),
             hint: format!("on {}: {hint}", host.pretty_name),
@@ -138,6 +141,67 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
         }
     };
 
+    const SHELL_OPTIONS: &[&str] = &["bash", "zsh", "fish", "none (distro default)"];
+
+    let chosen_shell: Option<String> = if let Some(ref s) = args.shell {
+        match s.as_str() {
+            "bash" | "zsh" | "fish" => Some(s.clone()),
+            other => anyhow::bail!("unsupported shell '{other}'\n  valid values: bash, zsh, fish"),
+        }
+    } else {
+        let default_shell_idx = cfg
+            .default_shell
+            .as_deref()
+            .and_then(|s| SHELL_OPTIONS.iter().position(|&c| c == s))
+            .unwrap_or(0);
+
+        let idx = Select::with_theme(&theme)
+            .with_prompt("Shell")
+            .items(SHELL_OPTIONS)
+            .default(default_shell_idx)
+            .interact()?;
+
+        if idx < 3 {
+            Some(SHELL_OPTIONS[idx].to_string())
+        } else {
+            None
+        }
+    };
+
+    const CONFIG_OPTIONS: &[&str] = &[
+        "no — keep container independent",
+        "copy — bake host config into container once",
+        "bind — mount host config live on every enter",
+    ];
+
+    let chosen_shell_config: Option<String> = if let Some(ref mode) = args.shell_config {
+        Some(mode.clone())
+    } else if chosen_shell.is_some() {
+        let default_idx = cfg
+            .copy_shell_config
+            .as_deref()
+            .and_then(|m| match m {
+                "copy" => Some(1usize),
+                "bind" => Some(2usize),
+                _ => Some(0usize),
+            })
+            .unwrap_or(0);
+
+        let idx = Select::with_theme(&theme)
+            .with_prompt("Copy shell config from host?")
+            .items(CONFIG_OPTIONS)
+            .default(default_idx)
+            .interact()?;
+
+        match idx {
+            1 => Some("copy".to_string()),
+            2 => Some("bind".to_string()),
+            _ => None,
+        }
+    } else {
+        None
+    };
+
     let container_dir = store.container_dir(&name);
     let rootfs_dir = store.rootfs_dir(&name);
 
@@ -145,6 +209,12 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
     println!("  {}", "Creating container".bold());
     println!("  {:<16} {}", "name:".dimmed(), name.cyan());
     println!("  {:<16} {}", "distro:".dimmed(), distro_str.cyan());
+    if let Some(ref s) = chosen_shell {
+        println!("  {:<16} {}", "shell:".dimmed(), s.cyan());
+    }
+    if let Some(ref m) = chosen_shell_config {
+        println!("  {:<16} {}", "shell config:".dimmed(), m.cyan());
+    }
     if let Some(ref t) = tmpl_name {
         println!("  {:<16} {}", "template:".dimmed(), t.cyan());
     }
@@ -162,88 +232,84 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
     store.create_dirs(&name)?;
     let rootfs = store.rootfs_dir(&name);
 
-    println!("{} bootstrapping {} rootfs…", "→".cyan(), distro_str.bold());
-    bootstrap(&distro, &rootfs).map_err(|e| {
-        let _ = store.remove(&name);
-        e
-    })?;
+    let provision_result = provision(
+        &rootfs,
+        &distro_str,
+        &distro,
+        tmpl.as_ref(),
+        &answers,
+        &args.packages,
+        chosen_shell.as_deref(),
+        repo.as_deref(),
+    );
 
-    let mut installed_packages: Vec<String> = Vec::new();
-
-    if let Some(ref t) = tmpl {
-        let base_pkgs: Vec<String> = if !t.base.packages_by_distro.is_empty() {
-            t.base
-                .packages_by_distro
-                .get(&distro_str)
-                .cloned()
-                .unwrap_or_default()
-        } else {
-            translate_list(&t.base.packages, &distro_str)
-        };
-
-        if !base_pkgs.is_empty() {
-            println!(
-                "{} installing base packages: {}",
-                "→".cyan(),
-                base_pkgs.join(", ").bold()
-            );
-            install_packages_with_fallback(&rootfs, &base_pkgs, &distro_str, &HashMap::new())?;
-            installed_packages.extend(base_pkgs);
-        }
-
-        for step in &t.steps {
-            if !step_applies(step, &distro_str, &answers) {
-                continue;
-            }
-
-            println!("{} {}…", "→".cyan(), step.name.bold());
-
-            if !step.tools.is_empty() {
-                let pkgs = translate_list(&step.tools, &distro_str);
-                println!("  {} packages: {}", "↳".dimmed(), pkgs.join(", ").dimmed());
-                install_packages_with_fallback(&rootfs, &pkgs, &distro_str, &t.runtime.env)?;
-                installed_packages.extend(pkgs);
-            }
-
-            for cmd in &step.commands {
-                run_command(&rootfs, cmd, &t.runtime.env)?;
-            }
-        }
-
-        for cmd in &t.runtime.commands {
-            run_command(&rootfs, cmd, &t.runtime.env)?;
-        }
-    }
-
-    if !args.packages.is_empty() {
-        let translated = translate_list(&args.packages, &distro_str);
-        println!(
-            "{} installing extra packages: {}",
-            "→".cyan(),
-            translated.join(", ").bold()
+    if let Err(e) = provision_result {
+        eprintln!(
+            "{} creation failed, cleaning up orphaned container…",
+            "!".red()
         );
-        install_packages_with_fallback(&rootfs, &translated, &distro_str, &HashMap::new())?;
-        installed_packages.extend(translated);
+        if let Err(rm_err) = store.remove(&name) {
+            eprintln!("{} cleanup also failed: {rm_err}", "warn:".yellow());
+        }
+        return Err(e);
     }
 
-    if let Some(ref url) = repo {
-        println!("{} cloning {}…", "→".cyan(), url.bold());
-        run_command(
-            &rootfs,
-            &format!("git clone {url} /workspace"),
-            &HashMap::new(),
-        )
-        .map_err(|_| DxonError::GitCloneFailed(url.clone()))?;
-    }
+    let (installed_packages, final_repo) = provision_result.expect("checked above");
 
     let mut meta = ContainerMeta::new(&name, &distro_str, rootfs_dir.to_str().unwrap());
     meta.template = tmpl_name;
     meta.packages = installed_packages;
-    meta.repo = repo;
+    meta.repo = final_repo;
+    meta.config.shell = chosen_shell.clone();
     if let Some(ref t) = tmpl {
         meta.config.env = t.runtime.env.clone();
     }
+
+    if let Some(ref mode_str) = chosen_shell_config {
+        let mode = crate::shell_config::ShellConfigMode::parse(mode_str).map_err(|e| {
+            let _ = store.remove(&name);
+            e
+        })?;
+        let host_home = user::resolve_home();
+        let shell_name = chosen_shell.as_deref().unwrap_or("bash");
+
+        match mode {
+            crate::shell_config::ShellConfigMode::Copy => {
+                crate::shell_config::apply_copy(&rootfs, &host_home, shell_name).map_err(|e| {
+                    let _ = store.remove(&name);
+                    e
+                })?;
+                meta.config.shell_config_mode = Some("copy".to_string());
+            }
+            crate::shell_config::ShellConfigMode::Bind => {
+                let bind_args = crate::shell_config::bind_args(&host_home, shell_name);
+                meta.config.extra_args.extend(bind_args);
+                meta.config.shell_config_mode = Some("bind".to_string());
+            }
+        }
+    }
+
     store.save_meta(&meta)?;
+
+    let mut prefs_changed = false;
+    if args.shell.is_none() {
+        if let Some(ref shell) = chosen_shell {
+            cfg.default_shell = Some(shell.clone());
+            prefs_changed = true;
+        }
+    }
+    if args.shell_config.is_none() {
+        let new_mode = chosen_shell_config.clone();
+        if new_mode != cfg.copy_shell_config {
+            cfg.copy_shell_config = new_mode;
+            prefs_changed = true;
+        }
+    }
+    if prefs_changed {
+        if let Err(e) = cfg.save() {
+            eprintln!("{} could not save preferences: {e}", "warn:".yellow());
+        }
+    }
 
     println!();
     println!(
@@ -252,6 +318,9 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
         name.cyan().bold()
     );
     println!("  rootfs:  {}", rootfs.display().to_string().dimmed());
+    if let Some(ref shell) = chosen_shell {
+        println!("  shell:   {}", shell.dimmed());
+    }
     println!("  enter:   {}", format!("dxon enter {name}").bold());
     println!();
 
@@ -277,12 +346,107 @@ fn step_applies(step: &Step, distro: &str, answers: &HashMap<String, String>) ->
     true
 }
 
-fn tool_available(name: &str) -> bool {
-    std::process::Command::new("which")
-        .arg(name)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+fn provision(
+    rootfs: &std::path::Path,
+    distro_str: &str,
+    distro: &Distro,
+    tmpl: Option<&DxTemplate>,
+    answers: &HashMap<String, String>,
+    extra_packages: &[String],
+    chosen_shell: Option<&str>,
+    repo: Option<&str>,
+) -> Result<(Vec<String>, Option<String>)> {
+    println!("{} bootstrapping {} rootfs…", "→".cyan(), distro_str.bold());
+    bootstrap(distro, rootfs)?;
+
+    let mut installed_packages: Vec<String> = Vec::new();
+
+    if let Some(t) = tmpl {
+        let base_pkgs: Vec<String> = if !t.base.packages_by_distro.is_empty() {
+            t.base
+                .packages_by_distro
+                .get(distro_str)
+                .cloned()
+                .unwrap_or_default()
+        } else {
+            translate_list(&t.base.packages, distro_str)
+        };
+
+        if !base_pkgs.is_empty() {
+            println!(
+                "{} installing base packages: {}",
+                "→".cyan(),
+                base_pkgs.join(", ").bold()
+            );
+            install_packages_with_fallback(rootfs, &base_pkgs, distro_str, &HashMap::new())?;
+            installed_packages.extend(base_pkgs);
+        }
+
+        for step in &t.steps {
+            if !step_applies(step, distro_str, answers) {
+                continue;
+            }
+
+            println!("{} {}…", "→".cyan(), step.name.bold());
+
+            if !step.tools.is_empty() {
+                let pkgs = translate_list(&step.tools, distro_str);
+                println!("  {} packages: {}", "↳".dimmed(), pkgs.join(", ").dimmed());
+                install_packages_with_fallback(rootfs, &pkgs, distro_str, &t.runtime.env)?;
+                installed_packages.extend(pkgs);
+            }
+
+            for cmd in &step.commands {
+                run_command(rootfs, cmd, &t.runtime.env)?;
+            }
+        }
+
+        for cmd in &t.runtime.commands {
+            run_command(rootfs, cmd, &t.runtime.env)?;
+        }
+    }
+
+    if !extra_packages.is_empty() {
+        let translated = translate_list(extra_packages, distro_str);
+        println!(
+            "{} installing extra packages: {}",
+            "→".cyan(),
+            translated.join(", ").bold()
+        );
+        install_packages_with_fallback(rootfs, &translated, distro_str, &HashMap::new())?;
+        installed_packages.extend(translated);
+    }
+
+    if let Some(shell) = chosen_shell {
+        if shell != "bash" {
+            let shell_pkg = translate_list(&[shell.to_string()], distro_str);
+            println!("{} installing shell: {}…", "→".cyan(), shell.bold());
+            install_packages_with_fallback(rootfs, &shell_pkg, distro_str, &HashMap::new())?;
+            installed_packages.extend(shell_pkg);
+        }
+
+        let shell_path = format!("/bin/{shell}");
+        let shell_bin = format!("/usr/{shell}");
+        let chsh_cmd = format!(
+            "chsh -s {shell_path} root 2>/dev/null || chsh -s {shell_bin} root 2>/dev/null || true"
+        );
+        let _ = run_command(rootfs, &chsh_cmd, &HashMap::new());
+    }
+
+    let final_repo = if let Some(url) = repo {
+        println!("{} cloning {}…", "→".cyan(), url.bold());
+        run_command(
+            rootfs,
+            &format!("git clone {url} /workspace"),
+            &HashMap::new(),
+        )
+        .map_err(|_| DxonError::GitCloneFailed(url.to_string()))?;
+        Some(url.to_string())
+    } else {
+        None
+    };
+
+    Ok((installed_packages, final_repo))
 }
 
 fn check_trust(

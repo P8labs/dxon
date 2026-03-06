@@ -4,6 +4,7 @@ mod config;
 mod container;
 mod error;
 mod runtime;
+mod shell_config;
 mod template;
 mod user;
 
@@ -17,8 +18,7 @@ use container::store::ContainerStore;
 
 fn main() {
     pub const VERSION: &str = env!("DXON_VERSION");
-    pub const GIT_COMMIT: &str = env!("DXON_GIT_COMMIT");
-    println!("dXon {} ({})", VERSION, GIT_COMMIT);
+    println!("dXon {}", VERSION);
 
     if let Err(e) = run() {
         eprintln!("{} {}", "error:".red().bold(), e);
@@ -59,10 +59,12 @@ fn run() -> anyhow::Result<()> {
             repo,
             packages,
             trust,
+            shell,
+            shell_config,
         } => {
             commands::create::run(
                 &store,
-                &cfg,
+                &mut cfg,
                 CreateArgs {
                     name,
                     distro,
@@ -70,6 +72,8 @@ fn run() -> anyhow::Result<()> {
                     repo,
                     packages,
                     trust,
+                    shell,
+                    shell_config,
                 },
             )?;
         }
@@ -84,6 +88,9 @@ fn run() -> anyhow::Result<()> {
         }
         Commands::Enter { name, cmd } => {
             commands::enter::run(&store, &name, &cmd)?;
+        }
+        Commands::Open { name, editor } => {
+            commands::open::run(&store, &mut cfg, &name, editor.as_deref())?;
         }
         Commands::Config { .. } | Commands::Template { .. } => unreachable!(),
     }

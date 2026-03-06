@@ -1,3 +1,10 @@
+[TODO]
+- [ ] Implement container ↔ host communication via Unix socket (Issue #2)
+- [ ] simple install script
+
+
+[06/03/2026]
+
 - [x] basic cli commands done (create, delete, list, info, enter)
 - [x] add global flag/env to change containers dir
 - [x] container metadata json per container
@@ -14,13 +21,9 @@
 - [x] show container details
 - [x] enter container shell
 - [x] run specific command inside container
-
 - [x] arch container bootstrap using pacstrap
 - [x] debian bootstrap using debootstrap
 - [x] alpine bootstrap using mini rootfs
-- [ ] auto detect correct alpine arch variant
-- [ ] allow ubuntu as alias for debian bootstrap
-
 - [x] initial template system implemented
 - [x] template spec doc written
 - [x] node template (pnpm/yarn/bun/npm options)
@@ -33,16 +36,11 @@
 - [x] support local template files
 - [x] command to list templates
 - [x] command to show template content
-
 - [x] nicer terminal output
 - [x] interactive prompts
 - [x] cleaner error messages
 - [x] split code into proper modules
-
 - [x] config file for defaults
 - [x] config set command
-
 - [x] repo cloning at container creation
-
-- [ ] github actions release builds
-- [ ] simple install script
+- [x] github actions release builds
