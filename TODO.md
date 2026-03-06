@@ -1,73 +1,48 @@
-# dxon TODO
+- [x] basic cli commands done (create, delete, list, info, enter)
+- [x] add global flag/env to change containers dir
+- [x] container metadata json per container
+- [x] container storage logic (create/load/list/delete)
+- [x] better error handling with useful messages
+- [x] check required system tools before doing anything
+- [x] make sure root is used where needed (bootstrap / enter)
+- [x] interactive container creation if flags not given
+- [x] non-interactive create when flags are passed
+- [x] allow cloning repo into container workspace
+- [x] container delete command with confirmation
+- [x] force delete option
+- [x] list containers in simple table
+- [x] show container details
+- [x] enter container shell
+- [x] run specific command inside container
 
-## Core
+- [x] arch container bootstrap using pacstrap
+- [x] debian bootstrap using debootstrap
+- [x] alpine bootstrap using mini rootfs
+- [ ] auto detect correct alpine arch variant
+- [ ] allow ubuntu as alias for debian bootstrap
 
-- [x] Define CLI structure with clap (create, delete, list, info, enter)
-- [x] Global `--dir` / `DXON_DIR` flag to override container storage directory
-- [x] Container metadata (JSON) per container (distro, created_at, template, packages, repo, config)
-- [x] Container storage (create dirs, save/load/list/remove meta)
-- [x] Structured error types with actionable messages
-- [x] Validate required system tools before operations (pacstrap, debootstrap, systemd-nspawn)
-- [x] Check for root privileges before bootstrap/enter operations
+- [x] initial template system implemented
+- [x] template spec doc written
+- [x] node template (pnpm/yarn/bun/npm options)
+- [x] rust template (rustup + tools)
+- [x] go template
+- [x] c/c++ template
+- [x] python template (pip/poetry/uv options)
+- [x] optional docker install inside templates
+- [x] support remote template urls
+- [x] support local template files
+- [x] command to list templates
+- [x] command to show template content
 
-## Container lifecycle
+- [x] nicer terminal output
+- [x] interactive prompts
+- [x] cleaner error messages
+- [x] split code into proper modules
 
-- [x] `dxon create` – interactive step-by-step mode when flags are omitted
-- [x] `dxon create` – non-interactive mode when `--distro` and `--template` flags are provided
-- [x] `dxon create --repo <url>` – clone a Git repository into `/workspace` inside the container
-- [x] `dxon delete <name>` – remove a container with confirmation prompt
-- [x] `dxon delete --force` – skip confirmation
-- [x] `dxon list` – tabular list of all containers
-- [x] `dxon info <name>` – detailed view of container metadata
-- [x] `dxon enter <name>` – drop into an interactive shell with systemd-nspawn
-- [x] `dxon enter <name> -- <cmd>` – run a specific command inside the container
+- [x] config file for defaults
+- [x] config set command
 
-## Bootstrap
+- [x] repo cloning at container creation
 
-- [x] Arch bootstrap via `pacstrap -c`
-- [x] Debian bootstrap via `debootstrap stable`
-- [x] Alpine bootstrap via curl + tar (mini-rootfs) + `apk update`
-- [ ] Alpine: resolve correct architecture variant URL automatically
-- [ ] Support Ubuntu as an alias for Debian bootstrap
-
-## Template system
-
-- [x] `.dx` template format (TOML)
-- [x] `TEMPLATE_SPEC.md` documenting all template fields
-- [x] Built-in `nodejs` template with pnpm / yarn / bun / npm prompt
-- [x] Built-in `rust` template with rustup + clippy + rustfmt
-- [x] Built-in `go` template
-- [x] Built-in `cpp` template (gcc, g++, cmake, ninja, gdb, clang)
-- [x] Built-in `python` template with pip / poetry / uv prompt
-- [x] All built-in templates support optional Docker tooling install
-- [x] Remote template fetching via URL (`--template https://...`)
-- [x] Local file template (`--template ./my-stack.dx`)
-- [ ] `dxon template list` – list all available built-in templates
-- [ ] `dxon template show <name>` – print the TOML source of a built-in template
-
-## Developer experience
-
-- [x] Colored, structured terminal output (colored crate)
-- [x] Interactive prompts via dialoguer
-- [x] Human-readable error messages instead of raw system output
-- [x] Clean separation of concerns across modules
-- [ ] Progress spinner during long-running bootstrap operations
-- [ ] `--quiet` flag to suppress non-essential output
-- [ ] Shell completion generation (`dxon completions <bash|zsh|fish>`)
-
-## Configuration
-
-- [ ] `~/.dxon/config.toml` for persistent defaults (default distro, default template)
-- [ ] `dxon config set <key> <value>` command
-
-## Workspace integration
-
-- [x] Clone Git repo into container at creation time
-- [ ] Bind-mount a host directory into the container (`--bind <host:container>`)
-- [ ] `dxon exec <name> <cmd>` – run a one-off command without entering interactively
-
-## Distribution & packaging
-
-- [ ] Release binary builds via GitHub Actions (x86_64, aarch64)
-- [ ] AUR package (Arch)
-- [ ] Install script (`curl | sh`)
+- [ ] github actions release builds
+- [ ] simple install script

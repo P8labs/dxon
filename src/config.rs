@@ -7,6 +7,9 @@ pub struct Config {
     pub containers_dir: Option<String>,
     pub default_distro: Option<String>,
     pub default_template: Option<String>,
+    /// Override the default template registry URL.
+    /// Defaults to `https://raw.githubusercontent.com/P8labs/dxon-registry/main`.
+    pub registry_url: Option<String>,
 }
 
 impl Config {
@@ -60,6 +63,14 @@ impl Config {
         default_containers_dir()
     }
 
+    /// Returns the active registry URL: the user-configured value or the default.
+    pub fn effective_registry_url(&self) -> &str {
+        self.registry_url
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(crate::template::registry::DEFAULT_REGISTRY_URL)
+    }
+
     pub fn set(&mut self, key: &str, value: &str) -> Result<()> {
         let opt = if value.is_empty() {
             None
@@ -70,8 +81,9 @@ impl Config {
             "containers_dir"   => self.containers_dir   = opt,
             "default_distro"   => self.default_distro   = opt,
             "default_template" => self.default_template = opt,
+            "registry_url"     => self.registry_url     = opt,
             _ => anyhow::bail!(
-                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template"
+                "unknown config key '{key}'\n  valid keys: containers_dir, default_distro, default_template, registry_url"
             ),
         }
         Ok(())
@@ -98,6 +110,7 @@ mod tests {
         assert!(cfg.containers_dir.is_none());
         assert!(cfg.default_distro.is_none());
         assert!(cfg.default_template.is_none());
+        assert!(cfg.registry_url.is_none());
     }
 
     #[test]
@@ -135,6 +148,35 @@ mod tests {
         let err = cfg.set("unknown_key", "val").unwrap_err();
         assert!(err.to_string().contains("unknown config key"));
         assert!(err.to_string().contains("unknown_key"));
+        assert!(err.to_string().contains("registry_url"));
+    }
+
+    #[test]
+    fn set_registry_url_stores_value() {
+        let mut cfg = Config::default();
+        cfg.set("registry_url", "https://example.com/registry")
+            .unwrap();
+        assert_eq!(
+            cfg.registry_url.as_deref(),
+            Some("https://example.com/registry")
+        );
+    }
+
+    #[test]
+    fn effective_registry_url_returns_default_when_unset() {
+        let cfg = Config::default();
+        assert!(!cfg.effective_registry_url().is_empty());
+        assert!(cfg.effective_registry_url().starts_with("https://"));
+    }
+
+    #[test]
+    fn effective_registry_url_returns_configured_value() {
+        let mut cfg = Config::default();
+        cfg.registry_url = Some("https://my-registry.example.com".into());
+        assert_eq!(
+            cfg.effective_registry_url(),
+            "https://my-registry.example.com"
+        );
     }
 
     #[test]
@@ -208,5 +250,6 @@ mod tests {
         assert!(restored.containers_dir.is_none());
         assert!(restored.default_distro.is_none());
         assert!(restored.default_template.is_none());
+        assert!(restored.registry_url.is_none());
     }
 }

@@ -31,6 +31,8 @@ pub struct BaseConfig {
     pub distros: Vec<String>,
     #[serde(default)]
     pub packages: Vec<String>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub packages_by_distro: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -66,6 +68,13 @@ pub struct Step {
 impl DxTemplate {
     pub fn from_toml(source: &str) -> Result<Self, toml::de::Error> {
         toml::from_str(source)
+    }
+
+    pub fn from_yaml(source: &str) -> Result<Self, String> {
+        let yaml = crate::template::yaml_spec::YamlTemplate::from_yaml(source)
+            .map_err(|e| format!("YAML parse error: {e}"))?;
+        yaml.validate()?;
+        Ok(yaml.into_dx_template())
     }
 }
 

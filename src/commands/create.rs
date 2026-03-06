@@ -21,6 +21,7 @@ pub struct CreateArgs {
     pub template: Option<String>,
     pub repo: Option<String>,
     pub packages: Vec<String>,
+    pub trust: bool,
 }
 
 pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()> {
@@ -72,7 +73,8 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
 
     let (tmpl, tmpl_name): (Option<DxTemplate>, Option<String>) = match args.template {
         Some(ref t) => {
-            let loaded = template::resolve(t)?;
+            let (loaded, source) = template::resolve(t, cfg.effective_registry_url())?;
+            check_trust(&source, args.trust, &theme)?;
             (Some(loaded), Some(t.clone()))
         }
         None => {
@@ -96,7 +98,9 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
 
             if idx < builtin::BUILTIN_NAMES.len() {
                 let bname = builtin::BUILTIN_NAMES[idx];
-                (Some(builtin::get(bname).unwrap()), Some(bname.to_string()))
+                let (loaded, source) = template::resolve(bname, cfg.effective_registry_url())?;
+                check_trust(&source, args.trust, &theme)?;
+                (Some(loaded), Some(bname.to_string()))
             } else {
                 (None, None)
             }
@@ -139,16 +143,20 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
 
     println!();
     println!("  {}", "Creating container".bold());
-    println!("  {:<16} {}", "name:".dimmed(),    name.cyan());
-    println!("  {:<16} {}", "distro:".dimmed(),  distro_str.cyan());
+    println!("  {:<16} {}", "name:".dimmed(), name.cyan());
+    println!("  {:<16} {}", "distro:".dimmed(), distro_str.cyan());
     if let Some(ref t) = tmpl_name {
         println!("  {:<16} {}", "template:".dimmed(), t.cyan());
     }
     if let Some(ref r) = repo {
         println!("  {:<16} {}", "repo:".dimmed(), r.cyan());
     }
-    println!("  {:<16} {}", "storage:".dimmed(), container_dir.display().to_string().cyan());
-    println!("  {:<16} {}", "host:".dimmed(),    host.pretty_name.dimmed());
+    println!(
+        "  {:<16} {}",
+        "storage:".dimmed(),
+        container_dir.display().to_string().cyan()
+    );
+    println!("  {:<16} {}", "host:".dimmed(), host.pretty_name.dimmed());
     println!();
 
     store.create_dirs(&name)?;
@@ -163,15 +171,24 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
     let mut installed_packages: Vec<String> = Vec::new();
 
     if let Some(ref t) = tmpl {
-        if !t.base.packages.is_empty() {
-            let translated = translate_list(&t.base.packages, &distro_str);
+        let base_pkgs: Vec<String> = if !t.base.packages_by_distro.is_empty() {
+            t.base
+                .packages_by_distro
+                .get(&distro_str)
+                .cloned()
+                .unwrap_or_default()
+        } else {
+            translate_list(&t.base.packages, &distro_str)
+        };
+
+        if !base_pkgs.is_empty() {
             println!(
                 "{} installing base packages: {}",
                 "→".cyan(),
-                translated.join(", ").bold()
+                base_pkgs.join(", ").bold()
             );
-            install_packages_with_fallback(&rootfs, &translated, &distro_str, &HashMap::new())?;
-            installed_packages.extend(translated);
+            install_packages_with_fallback(&rootfs, &base_pkgs, &distro_str, &HashMap::new())?;
+            installed_packages.extend(base_pkgs);
         }
 
         for step in &t.steps {
@@ -211,8 +228,12 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
 
     if let Some(ref url) = repo {
         println!("{} cloning {}…", "→".cyan(), url.bold());
-        run_command(&rootfs, &format!("git clone {url} /workspace"), &HashMap::new())
-            .map_err(|_| DxonError::GitCloneFailed(url.clone()))?;
+        run_command(
+            &rootfs,
+            &format!("git clone {url} /workspace"),
+            &HashMap::new(),
+        )
+        .map_err(|_| DxonError::GitCloneFailed(url.clone()))?;
     }
 
     let mut meta = ContainerMeta::new(&name, &distro_str, rootfs_dir.to_str().unwrap());
@@ -225,7 +246,11 @@ pub fn run(store: &ContainerStore, cfg: &Config, args: CreateArgs) -> Result<()>
     store.save_meta(&meta)?;
 
     println!();
-    println!("{} container {} is ready.", "✓".green().bold(), name.cyan().bold());
+    println!(
+        "{} container {} is ready.",
+        "✓".green().bold(),
+        name.cyan().bold()
+    );
     println!("  rootfs:  {}", rootfs.display().to_string().dimmed());
     println!("  enter:   {}", format!("dxon enter {name}").bold());
     println!();
@@ -258,4 +283,54 @@ fn tool_available(name: &str) -> bool {
         .output()
         .map(|o| o.status.success())
         .unwrap_or(false)
+}
+
+fn check_trust(
+    source: &template::TemplateSource,
+    trust_flag: bool,
+    theme: &dialoguer::theme::ColorfulTheme,
+) -> anyhow::Result<()> {
+    if source.is_trusted() {
+        println!(
+            "  {} template source: {} {}",
+            "✓".green(),
+            source.label().dimmed(),
+            "(trusted)".green()
+        );
+        return Ok(());
+    }
+
+    eprintln!();
+    eprintln!(
+        "  {} {}",
+        "warning:".yellow().bold(),
+        "template is from an untrusted source".bold()
+    );
+    eprintln!("  {:<12} {}", "source:".dimmed(), source.label().yellow());
+    eprintln!("  {:<12} {}", "kind:".dimmed(), source.kind());
+    eprintln!(
+        "  {}",
+        "Templates may execute arbitrary commands during container setup.".dimmed()
+    );
+    eprintln!("  {}", "Only proceed if you trust this source.".dimmed());
+    eprintln!();
+
+    if trust_flag {
+        println!(
+            "  {} proceeding with untrusted template (--trust passed)",
+            "→".yellow()
+        );
+        return Ok(());
+    }
+
+    let confirmed = Confirm::with_theme(theme)
+        .with_prompt("Proceed with this template?")
+        .default(false)
+        .interact()?;
+
+    if !confirmed {
+        anyhow::bail!("aborted — template source not trusted");
+    }
+
+    Ok(())
 }

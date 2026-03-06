@@ -33,10 +33,14 @@ fn run() -> anyhow::Result<()> {
         };
     }
 
-    if let Commands::Registry { action } = cli.command {
+    if let Commands::Template { action } = cli.command {
+        let registry_url = cfg.effective_registry_url().to_string();
         return match action {
-            cli::RegistryAction::List   => commands::registry::list(),
-            cli::RegistryAction::Update => commands::registry::update(),
+            cli::TemplateAction::List => commands::registry::list(&registry_url),
+            cli::TemplateAction::Search { keyword } => {
+                commands::registry::search(&keyword, &registry_url)
+            }
+            cli::TemplateAction::Refresh => commands::registry::refresh(&registry_url),
         };
     }
 
@@ -50,6 +54,7 @@ fn run() -> anyhow::Result<()> {
             template,
             repo,
             packages,
+            trust,
         } => {
             commands::create::run(
                 &store,
@@ -60,6 +65,7 @@ fn run() -> anyhow::Result<()> {
                     template,
                     repo,
                     packages,
+                    trust,
                 },
             )?;
         }
@@ -75,7 +81,7 @@ fn run() -> anyhow::Result<()> {
         Commands::Enter { name, cmd } => {
             commands::enter::run(&store, &name, &cmd)?;
         }
-        Commands::Config { .. } | Commands::Registry { .. } => unreachable!(),
+        Commands::Config { .. } | Commands::Template { .. } => unreachable!(),
     }
 
     Ok(())

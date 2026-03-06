@@ -2,30 +2,107 @@ pub mod builtin;
 pub mod registry;
 pub mod remote;
 pub mod spec;
+pub mod yaml_spec;
 
 use anyhow::Result;
+use colored::Colorize;
 
 use crate::error::DxonError;
 use spec::DxTemplate;
 
-pub fn resolve(template_ref: &str) -> Result<DxTemplate> {
-    // 1. Remote URL → HTTP fetch
+#[derive(Debug, Clone)]
+pub enum TemplateSource {
+    Registry,
+    RemoteUrl(String),
+    LocalFile(String),
+}
+
+impl TemplateSource {
+    pub fn is_trusted(&self) -> bool {
+        matches!(self, TemplateSource::Registry)
+    }
+
+    pub fn label(&self) -> &str {
+        match self {
+            TemplateSource::Registry => "official registry",
+            TemplateSource::RemoteUrl(url) => url.as_str(),
+            TemplateSource::LocalFile(path) => path.as_str(),
+        }
+    }
+
+    pub fn kind(&self) -> &str {
+        match self {
+            TemplateSource::Registry => "registry",
+            TemplateSource::RemoteUrl(_) => "remote URL",
+            TemplateSource::LocalFile(_) => "local file",
+        }
+    }
+}
+
+pub fn resolve(template_ref: &str, registry_url: &str) -> Result<(DxTemplate, TemplateSource)> {
     if remote::is_url(template_ref) {
-        return remote::fetch(template_ref);
+        println!(
+            "  {} loading template from remote URL {}",
+            "→".cyan(),
+            template_ref.dimmed()
+        );
+        let tmpl = remote::fetch(template_ref)?;
+        return Ok((tmpl, TemplateSource::RemoteUrl(template_ref.to_string())));
     }
 
-    // 2. Local file path → read from disk
-    if std::path::Path::new(template_ref).exists() {
-        let src = std::fs::read_to_string(template_ref)?;
-        return DxTemplate::from_toml(&src)
-            .map_err(|e| DxonError::InvalidTemplate(format!("{template_ref}: {e}")).into());
+    let path = std::path::Path::new(template_ref);
+    if path.exists() {
+        println!(
+            "  {} loading template from local file {}",
+            "→".cyan(),
+            template_ref.dimmed()
+        );
+        let src = std::fs::read_to_string(path)?;
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        let tmpl = parse_by_extension(ext, &src, template_ref)?;
+        return Ok((tmpl, TemplateSource::LocalFile(template_ref.to_string())));
     }
 
-    // 3. Registry name → user cache first, then compiled-in builtins
-    if let Some(tmpl) = registry::local_template(template_ref) {
-        return Ok(tmpl);
+    for ext in &["yaml", "yml"] {
+        let candidate = std::path::PathBuf::from(format!("{template_ref}.{ext}"));
+        if candidate.exists() {
+            let label = candidate.display().to_string();
+            println!(
+                "  {} loading template from local file {}",
+                "→".cyan(),
+                label.dimmed()
+            );
+            let src = std::fs::read_to_string(&candidate)?;
+            let tmpl = DxTemplate::from_yaml(&src)
+                .map_err(|e| DxonError::InvalidTemplate(format!("{}: {e}", candidate.display())))?;
+            return Ok((tmpl, TemplateSource::LocalFile(label)));
+        }
     }
 
-    builtin::get(template_ref)
-        .ok_or_else(|| DxonError::TemplateNotFound(template_ref.to_string()).into())
+    let tmpl = registry::load_by_name(template_ref, registry_url)
+        .map_err(|_| DxonError::TemplateNotFound(template_ref.to_string()))?;
+    Ok((tmpl, TemplateSource::Registry))
+}
+
+pub fn parse_by_extension(ext: &str, src: &str, label: &str) -> Result<DxTemplate> {
+    match ext {
+        "yaml" | "yml" => DxTemplate::from_yaml(src)
+            .map_err(|e| DxonError::InvalidTemplate(format!("{label}: {e}")).into()),
+        "dx" => {
+            eprintln!(
+                "{} template '{}' uses the deprecated .dx (TOML) format.\n  \
+                 Migrate to YAML (dxon/v1) — see TEMPLATE_SPEC.md for details.",
+                "warning:".yellow().bold(),
+                label
+            );
+            DxTemplate::from_toml(src)
+                .map_err(|e| DxonError::InvalidTemplate(format!("{label}: {e}")).into())
+        }
+        _ => DxTemplate::from_yaml(src)
+            .or_else(|_| {
+                DxTemplate::from_toml(src)
+                    .map_err(|e| DxonError::InvalidTemplate(format!("{label}: {e}")))
+            })
+            .map_err(Into::into),
+    }
 }

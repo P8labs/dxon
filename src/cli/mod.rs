@@ -27,6 +27,8 @@ pub enum Commands {
         repo: Option<String>,
         #[arg(long, short, num_args = 1.., value_name = "PKG")]
         packages: Vec<String>,
+        #[arg(long, short = 'y')]
+        trust: bool,
     },
 
     Delete {
@@ -36,6 +38,7 @@ pub enum Commands {
     },
 
     List,
+
     Info {
         name: String,
     },
@@ -45,13 +48,15 @@ pub enum Commands {
         #[arg(last = true)]
         cmd: Vec<String>,
     },
+
     Config {
         #[command(subcommand)]
         action: ConfigAction,
     },
-    Registry {
+
+    Template {
         #[command(subcommand)]
-        action: RegistryAction,
+        action: TemplateAction,
     },
 }
 
@@ -62,9 +67,8 @@ pub enum ConfigAction {
 }
 
 #[derive(Subcommand)]
-pub enum RegistryAction {
-    /// List available templates (cached + built-in)
+pub enum TemplateAction {
     List,
-    /// Download/refresh templates from github.com/P8labs/dxon-registry
-    Update,
+    Search { keyword: String },
+    Refresh,
 }

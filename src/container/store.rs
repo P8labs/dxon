@@ -37,8 +37,8 @@ impl ContainerStore {
 
     pub fn save_meta(&self, meta: &ContainerMeta) -> Result<()> {
         let path = self.meta_path(&meta.name);
-        let json = serde_json::to_string_pretty(meta)
-            .context("failed to serialize container metadata")?;
+        let json =
+            serde_json::to_string_pretty(meta).context("failed to serialize container metadata")?;
         std::fs::write(&path, &json)
             .with_context(|| format!("cannot write metadata: {}", path.display()))?;
         Ok(())
@@ -51,10 +51,12 @@ impl ContainerStore {
         let path = self.meta_path(name);
         let json = std::fs::read_to_string(&path)
             .with_context(|| format!("cannot read metadata: {}", path.display()))?;
-        let meta: ContainerMeta = serde_json::from_str(&json)
-            .with_context(|| {
-                format!("corrupt metadata for container '{name}': {}", path.display())
-            })?;
+        let meta: ContainerMeta = serde_json::from_str(&json).with_context(|| {
+            format!(
+                "corrupt metadata for container '{name}': {}",
+                path.display()
+            )
+        })?;
         Ok(meta)
     }
 
@@ -96,12 +98,11 @@ impl ContainerStore {
         if !dir.exists() {
             return Err(DxonError::ContainerNotFound(name.to_string()).into());
         }
-        // Direct removal succeeds when files are user-owned.
+
         if std::fs::remove_dir_all(&dir).is_ok() {
             return Ok(());
         }
-        // Rootfs contents are typically root-owned (created by pacstrap/debootstrap/nspawn).
-        // Fall back to a privileged rm -rf.
+
         let status = crate::user::privileged_command("rm")
             .args(["-rf", "--", dir.to_str().unwrap()])
             .status()
