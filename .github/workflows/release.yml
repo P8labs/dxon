@@ -1,0 +1,120 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            arch: amd64
+          - target: aarch64-unknown-linux-musl
+            arch: arm64
+          - target: armv7-unknown-linux-musleabihf
+            arch: armv7
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+
+      - name: Build binary for ${{ matrix.target }}
+        run: |
+          docker buildx build \
+            --build-arg VERSION=$VERSION \
+            --build-arg TARGET=${{ matrix.target }} \
+            --build-arg ARCH=${{ matrix.arch }} \
+            --file Dockerfile \
+            --output type=local,dest=release \
+            .
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd release
+          for file in dxon-*; do
+            sha256sum "$file" > "$file.sha256"
+          done
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dxon-${{ matrix.target }}
+          path: release/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifact structure
+        run: |
+          mkdir release
+          find artifacts -type f -exec cp {} release/ \;
+          ls -lh release
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag_name=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          generate_release_notes: true
+          make_latest: true
+          body: |
+            ## dXon
+
+            **dXon** is a lightweight developer container manager designed to create isolated development environments without polluting the host system.
+
+            It uses system tools such as **systemd-nspawn**, **pacstrap**, and **debootstrap** to bootstrap reproducible development containers using templates.
+
+            ### Supported Platforms
+            - Linux x86_64 (Intel / AMD 64-bit)
+            - Linux ARM64 (aarch64)
+            - Linux ARMv7
+
+            ### Installation 
+
+            See the [documentation](https://p8labs.github.io/dxon) for more information.
+            See Template Registry [(dxon-registry)](https://github.com/P8labs/dxon-registry)
+
+            ---
+            Maintained by **P8labs**
+          files: release/*
