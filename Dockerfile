@@ -35,6 +35,7 @@ RUN cargo zigbuild --release --target ${TARGET} || true
 
 
 COPY ./src ./src
+COPY ./build.rs ./build.rs
 RUN cargo zigbuild --release --target ${TARGET}
 
 RUN mkdir /out && \

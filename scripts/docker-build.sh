@@ -21,9 +21,10 @@ get_version() {
     grep '^version = ' "$CARGO_TOML" | head -n1 | sed 's/version = "\(.*\)"/\1/'
 }
 CURRENT_VERSION=$(get_version)
+ARCH="amd64"
 
 echo -e "${YELLOW}Building Docker image with all platforms...${NC}"
-docker build -f Dockerfile --build-arg TARGET=x86_64-unknown-linux-musl --build-arg VERSION=${CURRENT_VERSION} -t dxon-builder:latest . || {
+docker build -f Dockerfile --build-arg TARGET=x86_64-unknown-linux-musl --build-arg VERSION=${CURRENT_VERSION} --build-arg ARCH=${ARCH} -t dxon-builder:latest . || {
     echo -e "${RED} Build failed${NC}"
     exit 1
 }

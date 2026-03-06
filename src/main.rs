@@ -16,6 +16,10 @@ use config::Config;
 use container::store::ContainerStore;
 
 fn main() {
+    pub const VERSION: &str = env!("DXON_VERSION");
+    pub const GIT_COMMIT: &str = env!("DXON_GIT_COMMIT");
+    println!("dXon {} ({})", VERSION, GIT_COMMIT);
+
     if let Err(e) = run() {
         eprintln!("{} {}", "error:".red().bold(), e);
         std::process::exit(1);
