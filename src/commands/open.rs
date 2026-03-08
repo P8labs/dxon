@@ -1,10 +1,13 @@
 use anyhow::{bail, Result};
 use colored::Colorize;
+use serde::{Deserialize, Serialize};
+use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::config::Config;
 use crate::container::store::ContainerStore;
+use crate::runtime::ipc;
 use crate::user;
 
 const EDITOR_CANDIDATES: &[&str] = &["code", "cursor", "zed"];
@@ -14,10 +17,36 @@ const VSCODE_COMPAT: &[&str] = &["code", "cursor"];
 pub fn run(
     store: &ContainerStore,
     cfg: &mut Config,
-    name: &str,
+    target: &str,
     editor_override: Option<&str>,
 ) -> Result<()> {
-    let meta = store.load_meta(name)?;
+    if is_container_client_mode() {
+        return proxy_open_to_host(target, editor_override);
+    }
+
+    let (container, folder) = parse_open_target(target)?;
+    run_host_open_for_workspace_subpath(store, cfg, &container, &folder, editor_override)
+}
+
+pub fn run_from_rpc(
+    store: &ContainerStore,
+    cfg: &mut Config,
+    container_name: &str,
+    container_path: &str,
+    editor_override: Option<&str>,
+) -> Result<()> {
+    let folder = workspace_subpath_from_container_path(container_path)?;
+    run_host_open_for_workspace_subpath(store, cfg, container_name, &folder, editor_override)
+}
+
+fn run_host_open_for_workspace_subpath(
+    store: &ContainerStore,
+    cfg: &mut Config,
+    container_name: &str,
+    folder: &Path,
+    editor_override: Option<&str>,
+) -> Result<()> {
+    let meta = store.load_meta(container_name)?;
     let rootfs = PathBuf::from(&meta.rootfs_path);
 
     if !rootfs.exists() {
@@ -28,11 +57,29 @@ pub fn run(
     }
 
     let workspace = rootfs.join("workspace");
-    let open_path = if workspace.exists() {
-        workspace
-    } else {
-        rootfs.clone()
-    };
+    if !workspace.exists() {
+        bail!(
+            "workspace directory not found: {}\n  container '{}' has no /workspace",
+            workspace.display(),
+            container_name
+        );
+    }
+
+    let open_path = workspace.join(folder);
+    if !open_path.exists() {
+        bail!(
+            "target directory not found in container workspace: {}\n  expected host path: {}",
+            folder.display(),
+            open_path.display()
+        );
+    }
+
+    if !open_path.is_dir() {
+        bail!(
+            "target is not a directory: {}\n  use a folder path under /workspace",
+            open_path.display()
+        );
+    }
 
     let editor = if let Some(e) = editor_override {
         e.to_string()
@@ -50,7 +97,12 @@ pub fn run(
     let editor_bin = editor.split_whitespace().next().unwrap_or("");
 
     if VSCODE_COMPAT.contains(&editor_bin) {
-        ensure_vscode_terminal_profile(&open_path, name)?;
+        let enter_target = if folder.as_os_str().is_empty() {
+            format!("{}/.", container_name)
+        } else {
+            format!("{}/{}", container_name, folder.display())
+        };
+        ensure_vscode_terminal_profile(&open_path, &enter_target)?;
     }
 
     println!(
@@ -68,7 +120,7 @@ pub fn run(
         println!(
             "  {}   use `dxon enter {}` to enter the container from a host terminal",
             " ".dimmed(),
-            name
+            container_name
         );
     }
 
@@ -91,6 +143,92 @@ pub fn run(
     Ok(())
 }
 
+fn parse_open_target(target: &str) -> Result<(String, PathBuf)> {
+    let (container, raw_folder) = target.split_once('/').ok_or_else(|| {
+        anyhow::anyhow!("invalid target '{}': expected <container>/<folder>", target)
+    })?;
+
+    if container.is_empty() {
+        bail!("invalid target '{}': missing container name", target);
+    }
+
+    let folder = sanitize_workspace_subpath(raw_folder)?;
+    Ok((container.to_string(), folder))
+}
+
+fn sanitize_workspace_subpath(raw: &str) -> Result<PathBuf> {
+    let mut out = PathBuf::new();
+    let input = Path::new(raw);
+
+    if input.is_absolute() {
+        bail!("workspace folder must be relative, got absolute path '{raw}'");
+    }
+
+    for comp in input.components() {
+        match comp {
+            std::path::Component::CurDir => {}
+            std::path::Component::Normal(part) => out.push(part),
+            std::path::Component::ParentDir => {
+                bail!("workspace folder must not contain '..': '{raw}'")
+            }
+            _ => bail!("invalid workspace folder path: '{raw}'"),
+        }
+    }
+
+    Ok(out)
+}
+
+fn workspace_subpath_from_container_path(container_path: &str) -> Result<PathBuf> {
+    let path = Path::new(container_path);
+    if !path.is_absolute() {
+        bail!(
+            "invalid container path '{}': expected an absolute path",
+            container_path
+        );
+    }
+
+    let rel = path
+        .strip_prefix("/workspace")
+        .map_err(|_| anyhow::anyhow!("path '{}' is outside /workspace", container_path))?;
+
+    sanitize_workspace_subpath(rel.to_string_lossy().as_ref())
+}
+
+fn is_container_client_mode() -> bool {
+    Path::new(ipc::CONTAINER_SOCKET_PATH).exists()
+        && env::var("DXON_CONTAINER")
+            .ok()
+            .is_some_and(|v| !v.trim().is_empty())
+}
+
+fn proxy_open_to_host(path_arg: &str, editor_override: Option<&str>) -> Result<()> {
+    let container = env::var("DXON_CONTAINER")
+        .map_err(|_| anyhow::anyhow!("DXON_CONTAINER not set in container session"))?;
+
+    let current_dir = env::current_dir()?;
+    let requested = Path::new(path_arg);
+    let abs = if requested.is_absolute() {
+        requested.to_path_buf()
+    } else {
+        current_dir.join(requested)
+    };
+
+    let req = IpcRequest {
+        method: "open".to_string(),
+        container,
+        path: abs.to_string_lossy().into_owned(),
+        editor: editor_override.map(ToOwned::to_owned),
+    };
+
+    let response: IpcResponse = ipc::send_request(Path::new(ipc::CONTAINER_SOCKET_PATH), &req)?;
+    if !response.ok {
+        bail!(response.message);
+    }
+
+    println!("{}", response.message);
+    Ok(())
+}
+
 fn detect_editor() -> Result<String> {
     for &candidate in EDITOR_CANDIDATES {
         if user::command_available(candidate) {
@@ -104,7 +242,7 @@ fn detect_editor() -> Result<String> {
     )
 }
 
-fn ensure_vscode_terminal_profile(workspace: &Path, container_name: &str) -> Result<()> {
+fn ensure_vscode_terminal_profile(workspace: &Path, enter_target: &str) -> Result<()> {
     let vscode_dir = workspace.join(".vscode");
 
     user::privileged_mkdir(&vscode_dir)?;
@@ -126,7 +264,7 @@ fn ensure_vscode_terminal_profile(workspace: &Path, container_name: &str) -> Res
     let profile_name = "dXon";
     let profile_entry = serde_json::json!({
         "path": "dxon",
-        "args": ["enter", container_name],
+        "args": ["enter", enter_target],
         "icon": "terminal-linux"
     });
 
@@ -150,7 +288,7 @@ fn ensure_vscode_terminal_profile(workspace: &Path, container_name: &str) -> Res
     println!(
         "  {} wrote .vscode/settings.json (dXon terminal profile → dxon enter {})",
         "✓".green(),
-        container_name
+        enter_target
     );
 
     Ok(())
@@ -204,6 +342,21 @@ fn host_user_command(prog: &str) -> Command {
     Command::new(prog)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct IpcRequest {
+    method: String,
+    container: String,
+    path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    editor: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct IpcResponse {
+    ok: bool,
+    message: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,7 +388,7 @@ mod tests {
     #[test]
     fn creates_vscode_dir_and_settings_when_absent() {
         let ws = workspace();
-        ensure_vscode_terminal_profile(ws.path(), "myenv").unwrap();
+        ensure_vscode_terminal_profile(ws.path(), "myenv/.").unwrap();
 
         let settings_path = ws.path().join(".vscode/settings.json");
         assert!(settings_path.exists());
@@ -247,7 +400,7 @@ mod tests {
         let profile = &v["terminal.integrated.profiles.linux"]["dXon"];
         assert_eq!(profile["path"], "dxon");
         assert_eq!(profile["args"][0], "enter");
-        assert_eq!(profile["args"][1], "myenv");
+        assert_eq!(profile["args"][1], "myenv/.");
     }
 
     #[test]
@@ -268,7 +421,7 @@ mod tests {
         )
         .unwrap();
 
-        ensure_vscode_terminal_profile(ws.path(), "devbox").unwrap();
+        ensure_vscode_terminal_profile(ws.path(), "devbox/src").unwrap();
 
         let v: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(vscode.join("settings.json")).unwrap())
@@ -304,7 +457,7 @@ mod tests {
         )
         .unwrap();
 
-        ensure_vscode_terminal_profile(ws.path(), "new").unwrap();
+        ensure_vscode_terminal_profile(ws.path(), "new/pkg").unwrap();
 
         let v: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(vscode.join("settings.json")).unwrap())
@@ -312,7 +465,7 @@ mod tests {
 
         assert_eq!(
             v["terminal.integrated.profiles.linux"]["dXon"]["args"][1],
-            "new"
+            "new/pkg"
         );
     }
 
@@ -328,7 +481,7 @@ mod tests {
 }"#;
         fs::write(vscode.join("settings.json"), jsonc).unwrap();
 
-        ensure_vscode_terminal_profile(ws.path(), "ctr").unwrap();
+        ensure_vscode_terminal_profile(ws.path(), "ctr/.").unwrap();
 
         let v: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(vscode.join("settings.json")).unwrap())
@@ -336,5 +489,28 @@ mod tests {
 
         assert_eq!(v["editor.tabSize"], 4);
         assert_eq!(v["terminal.integrated.defaultProfile.linux"], "dXon");
+    }
+
+    #[test]
+    fn parse_open_target_requires_container_and_folder() {
+        assert!(parse_open_target("devbox").is_err());
+        let (name, folder) = parse_open_target("devbox/src").unwrap();
+        assert_eq!(name, "devbox");
+        assert_eq!(folder, PathBuf::from("src"));
+    }
+
+    #[test]
+    fn sanitize_workspace_subpath_rejects_parent_traversal() {
+        assert!(sanitize_workspace_subpath("../etc").is_err());
+        assert!(sanitize_workspace_subpath("a/../../b").is_err());
+    }
+
+    #[test]
+    fn workspace_subpath_from_container_path_requires_workspace_prefix() {
+        assert!(workspace_subpath_from_container_path("/tmp").is_err());
+        assert_eq!(
+            workspace_subpath_from_container_path("/workspace/project").unwrap(),
+            PathBuf::from("project")
+        );
     }
 }

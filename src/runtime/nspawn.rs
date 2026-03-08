@@ -142,12 +142,7 @@ fn prompt_package_failure(
 /// container rootfs, creating the group and user if necessary.
 ///
 /// This is a no-op when `uid == 0` (root always exists).
-pub fn ensure_container_user(
-    rootfs: &Path,
-    username: &str,
-    uid: u32,
-    gid: u32,
-) -> Result<()> {
+pub fn ensure_container_user(rootfs: &Path, username: &str, uid: u32, gid: u32) -> Result<()> {
     if uid == 0 {
         return Ok(());
     }
@@ -160,7 +155,11 @@ pub fn ensure_container_user(
         return Ok(());
     }
 
-    println!("{} creating container user {}…", "→".cyan(), username.bold());
+    println!(
+        "{} creating container user {}…",
+        "→".cyan(),
+        username.bold()
+    );
 
     // Create the group if it doesn't already exist (gracefully ignore errors
     // from distros where the group was created as part of an earlier step).

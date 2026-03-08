@@ -7,8 +7,14 @@ pub fn run(store: &ContainerStore) -> Result<()> {
     let containers = store.list()?;
 
     if containers.is_empty() {
-        println!("No containers found. Create one with {}", "dxon create".bold());
-        println!("  storage: {}", store.base_dir.display().to_string().dimmed());
+        println!(
+            "No containers found. Create one with {}",
+            "dxon create".bold()
+        );
+        println!(
+            "  storage: {}",
+            store.base_dir.display().to_string().dimmed()
+        );
         return Ok(());
     }
 

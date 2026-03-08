@@ -7,7 +7,14 @@ pub fn bootstrap(rootfs: &Path) -> Result<()> {
     super::require_tool("pacstrap", "pacman -S arch-install-scripts")?;
 
     let status = crate::user::privileged_command("pacstrap")
-        .args(["-c", rootfs.to_str().unwrap(), "base", "base-devel", "git", "curl"])
+        .args([
+            "-c",
+            rootfs.to_str().unwrap(),
+            "base",
+            "base-devel",
+            "git",
+            "curl",
+        ])
         .status()
         .map_err(|e| DxonError::BootstrapFailed {
             distro: "arch".into(),
