@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g., 1.2.3)"
+        description: "Version to release — MAJOR.MINOR.PATCH, no leading 'v' (e.g. 1.2.3)"
         required: true
         type: string
 
@@ -15,9 +15,81 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # ---------------------------------------------------------------------------
+  # Job 1 (workflow_dispatch only):
+  #   • Validates the version string.
+  #   • Bumps the version in Cargo.toml and Cargo.lock.
+  #   • Commits the change and pushes an annotated tag.
+  # On a plain tag push this job is skipped automatically.
+  # ---------------------------------------------------------------------------
+  prepare:
+    name: Bump version & create tag
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      tag: ${{ steps.push.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version '$VERSION'. Use MAJOR.MINOR.PATCH (e.g. 1.2.3) — no leading 'v'."
+            exit 1
+          fi
+
+      - name: Update Cargo.toml
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+          grep '^version = ' Cargo.toml
+
+      - name: Update Cargo.lock
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          python3 << 'EOF'
+          import re, os
+          version = os.environ['VERSION']
+          content = open('Cargo.lock').read()
+          content = re.sub(
+              r'(name = "dxon"\nversion = ")[^"]+(")',
+              r'\g<1>' + version + r'\2',
+              content
+          )
+          open('Cargo.lock', 'w').write(content)
+          EOF
+
+      - name: Commit, tag, and push
+        id: push
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          TAG="v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore: bump version to $VERSION [skip ci]"
+          git tag -a "$TAG" -m "Release $VERSION"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Cross-compile release binaries.
+  # Runs on:
+  #   • A plain tag push  (push: tags: v*)
+  #   • workflow_dispatch after 'prepare' succeeds
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && needs.prepare.result == 'success'))
     strategy:
       matrix:
         include:
@@ -31,12 +103,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # dispatch: check out the tag we just pushed; tag push: GITHUB_REF is the tag.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', github.event.inputs.version) || github.ref }}
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Determine version
-        id: version
+      - name: Set VERSION
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
@@ -67,9 +141,14 @@ jobs:
           name: dxon-${{ matrix.target }}
           path: release/*
 
+  # ---------------------------------------------------------------------------
+  # Job 3: Publish the GitHub Release with all artifacts.
+  # ---------------------------------------------------------------------------
   release:
-    needs: build
+    name: Create GitHub Release
+    needs: [build]
     runs-on: ubuntu-latest
+    if: always() && needs.build.result == 'success'
 
     steps:
       - name: Download artifacts
@@ -83,7 +162,7 @@ jobs:
           find artifacts -type f -exec cp {} release/ \;
           ls -lh release
 
-      - name: Determine version
+      - name: Set tag name
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
