@@ -62,7 +62,7 @@ pub fn install_packages_with_fallback(
     );
 
     for pkg in packages {
-        let single_cmd = pkg_install_cmd(distro, &[pkg.clone()]);
+        let single_cmd = pkg_install_cmd(distro, std::slice::from_ref(pkg));
         if run_command(rootfs, &single_cmd, env).is_ok() {
             continue;
         }
@@ -121,7 +121,7 @@ fn prompt_package_failure(
             let replacement: String = Input::with_theme(&theme)
                 .with_prompt("Replacement package name")
                 .interact_text()?;
-            let cmd = pkg_install_cmd(distro, &[replacement.clone()]);
+            let cmd = pkg_install_cmd(distro, std::slice::from_ref(&replacement));
             run_command(rootfs, &cmd, env).map_err(|_| {
                 DxonError::BootstrapFailed {
                     distro: distro.into(),
@@ -138,7 +138,50 @@ fn prompt_package_failure(
     }
 }
 
-pub fn enter(rootfs: &Path, cmd: &[String], extra_args: &[String]) -> Result<()> {
+/// Ensure a user with the given `username`, `uid`, and `gid` exists inside the
+/// container rootfs, creating the group and user if necessary.
+///
+/// This is a no-op when `uid == 0` (root always exists).
+pub fn ensure_container_user(rootfs: &Path, username: &str, uid: u32, gid: u32) -> Result<()> {
+    if uid == 0 {
+        return Ok(());
+    }
+
+    let env = HashMap::new();
+
+    // Check whether the user already exists.
+    let check_cmd = format!("id {username} >/dev/null 2>&1");
+    if run_command(rootfs, &check_cmd, &env).is_ok() {
+        return Ok(());
+    }
+
+    println!(
+        "{} creating container user {}…",
+        "→".cyan(),
+        username.bold()
+    );
+
+    // Create the group if it doesn't already exist (gracefully ignore errors
+    // from distros where the group was created as part of an earlier step).
+    let group_cmd = format!(
+        "getent group {gid} >/dev/null 2>&1 || groupadd -g {gid} {username} 2>/dev/null || true"
+    );
+    let _ = run_command(rootfs, &group_cmd, &env);
+
+    // Create the user with a matching UID/GID and a real home directory.
+    let user_cmd = format!("useradd -u {uid} -g {gid} -m -s /bin/sh {username}");
+    run_command(rootfs, &user_cmd, &env)?;
+
+    Ok(())
+}
+
+pub fn enter(
+    rootfs: &Path,
+    cmd: &[String],
+    extra_args: &[String],
+    user: Option<&str>,
+    chdir: Option<&str>,
+) -> Result<()> {
     require_nspawn()?;
 
     let mut builder = crate::user::privileged_command("systemd-nspawn");
@@ -146,6 +189,14 @@ pub fn enter(rootfs: &Path, cmd: &[String], extra_args: &[String]) -> Result<()>
 
     for arg in extra_args {
         builder.arg(arg);
+    }
+
+    if let Some(u) = user {
+        builder.arg("--user").arg(u);
+    }
+
+    if let Some(dir) = chdir {
+        builder.arg("--chdir").arg(dir);
     }
 
     if !cmd.is_empty() {

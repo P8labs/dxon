@@ -1,0 +1,393 @@
+# dXon — LLM / AI Agent Reference
+# https://p8labs.github.io/dxon
+# Source: https://github.com/P8labs/dxon
+# Version: 0.2.0  (March 2026)
+#
+# This file is machine-readable context for LLMs and AI coding agents.
+# It describes what dXon is, every CLI command, all flags, config keys,
+# template fields, and common usage patterns so an agent can use dXon
+# without browsing the full documentation.
+
+---
+
+## What dXon is
+
+dXon (pronounced "dx-on") is a CLI tool for creating and managing
+lightweight, isolated development containers on Linux. It wraps
+systemd-nspawn, pacstrap, debootstrap, and Alpine rootfs setup to give
+developers per-project environments without polluting the host system.
+
+Containers are stored as plain directories (chroot-like rootfs trees).
+They are not Docker images.
+
+dXon is Linux-only. macOS and Windows are not supported.
+
+---
+
+## Core concepts
+
+- **Container**: a directory under ~/.dxon/containers/<name>/ containing
+  a complete Linux user-space rootfs, managed by systemd-nspawn.
+- **Template**: a YAML file (schema: dxon/v1) that describes which
+  packages to install and which setup commands to run inside a fresh
+  container.
+- **Registry**: a public index of community templates at
+  https://github.com/P8labs/dxon-registry
+- **Distro**: the base Linux distribution bootstrapped into the container.
+  Supported values: arch | debian | alpine
+
+---
+
+## Binary locations
+
+  Installed binary:  /usr/local/bin/dxon   (default)
+  Containers:        ~/.dxon/containers/
+  Config file:       ~/.config/dxon/config.toml
+  Registry cache:    ~/.cache/dxon/
+
+---
+
+## Installation (one-liner)
+
+  curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/install.sh | sh
+
+  # pin a version
+  DXON_VERSION=v0.2.0 curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/install.sh | sh
+
+  # custom install directory
+  DXON_INSTALL_DIR=~/.local/bin curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/install.sh | sh
+
+## Upgrade
+
+  curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/upgrade.sh | sh
+
+---
+
+## CLI — complete command reference
+
+### dxon create
+
+Create a new container. All flags are optional; missing ones trigger
+interactive prompts.
+
+  dxon create [NAME] [OPTIONS]
+
+  Options:
+    --distro,   -d  DISTRO    Base distribution: arch | debian | alpine
+    --template, -t  TEMPLATE  Template name, file path, or URL
+    --repo,     -r  URL       Git repository cloned to /workspace after setup
+    --packages, -p  PKG...    Extra packages to install (space-separated list)
+    --shell         SHELL     Shell: bash | zsh | fish   (default: bash)
+    --shell-config  MODE      Share host shell config: copy | bind
+    --trust,    -y            Skip trust confirmation for untrusted templates
+
+  Global flag:
+    --dir PATH   (env: DXON_DIR)   Override container storage directory
+
+  Examples:
+    dxon create myenv
+    dxon create node-dev --distro arch --template nodejs
+    dxon create pyproj  --distro debian --template python --repo https://github.com/user/repo
+    dxon create cppenv  --distro alpine --shell zsh --shell-config copy
+    dxon create custom  --distro arch --packages git curl neovim
+    dxon create ci      --distro debian --template rust --trust
+
+### dxon enter
+
+Enter a container shell or run a single command inside it.
+
+  dxon enter NAME [-- CMD [ARGS...]]
+
+  NAME may include a subpath:  NAME/subfolder
+    → starts the session in /workspace/subfolder inside the container
+    → also usable inside the container: dxon open . forwards to host
+
+  Examples:
+    dxon enter myenv
+    dxon enter myenv/src
+    dxon enter myenv -- cargo build --release
+    dxon enter myenv -- bash -c "npm install && npm run build"
+
+### dxon open
+
+Open a container workspace folder in the host editor.
+
+  dxon open NAME/PATH [--editor BINARY]
+
+  Editors auto-detected in priority order: code (VS Code), cursor, zed
+  Detected editors can be overridden with --editor.
+
+  When run inside a container entered via dxon enter, dxon open . sends
+  the request to the host via /run/dxon.sock.
+
+  VS Code / Cursor: writes .vscode/settings.json with a dXon terminal
+  profile so Ctrl+` opens the container shell automatically.
+
+  Examples:
+    dxon open myenv/.
+    dxon open myenv/project-a
+    dxon open myenv/project-a --editor zed
+    dxon open myenv/project-a --editor cursor
+
+### dxon list
+
+List all containers.
+
+  dxon list
+
+  Output columns: NAME | DISTRO | CREATED
+
+### dxon info
+
+Show detailed metadata for one container.
+
+  dxon info NAME
+
+  Shows: distro, template, shell, shell-config mode, creation timestamp,
+         environment variables, storage path.
+
+### dxon delete
+
+Permanently delete a container and all its files.
+
+  dxon delete NAME [--force | -f]
+
+  --force  skips confirmation prompt (use in scripts/automation)
+
+  This is irreversible.
+
+### dxon config show
+
+Print the current configuration.
+
+  dxon config show
+
+### dxon config set
+
+Change a single configuration value.
+
+  dxon config set KEY VALUE
+
+  Keys:
+    containers_dir      Path for storing container rootfs directories
+    registry_url        URL of the registry index JSON
+    default_distro      Pre-select distro in create prompt (arch|debian|alpine)
+    default_shell       Pre-select shell in create prompt (bash|zsh|fish)
+    default_template    Pre-select template in create prompt
+    copy_shell_config   Pre-select shell-config mode (copy|bind)
+    default_editor      Editor binary for dxon open
+
+  Examples:
+    dxon config set containers_dir /data/dxon/containers
+    dxon config set default_distro arch
+    dxon config set default_shell zsh
+
+### dxon template list
+
+List all templates in the configured registry.
+
+  dxon template list
+
+### dxon template search
+
+Search registry templates by keyword.
+
+  dxon template search KEYWORD
+
+  Example:
+    dxon template search node
+
+### dxon template refresh
+
+Re-fetch and cache the registry index.
+
+  dxon template refresh
+
+---
+
+## Configuration file
+
+Location: ~/.config/dxon/config.toml
+
+  containers_dir  = "~/.dxon/containers"
+  registry_url    = "https://raw.githubusercontent.com/P8labs/dxon-registry/main/registry.json"
+  default_distro  = "arch"        # optional
+  default_shell   = "zsh"         # optional
+  default_template = "rust"       # optional
+  copy_shell_config = "copy"      # optional: copy | bind
+  default_editor  = "cursor"      # optional
+
+---
+
+## Official templates
+
+  nodejs  — Node.js; prompts for package manager (npm/pnpm/yarn/bun)
+  python  — Python 3 + pip
+  rust    — Rust via rustup + clippy + rustfmt
+  go      — Go development environment
+  cpp     — C/C++ build tools + optional cmake/ninja
+
+---
+
+## Template format (dxon/v1)
+
+  schema: dxon/v1          # required
+  name: myenv              # required; no spaces
+  description: "..."       # optional
+  base: arch               # optional; suggested distro
+
+  packages:                # per-distro package lists (raw package names)
+    arch:   [git, curl]
+    debian: [git, curl, ca-certificates]
+    alpine: [git, curl, ca-certificates]
+
+  env:                     # env vars set at enter time
+    NODE_ENV: development
+
+  options:                 # interactive prompts shown before creation
+    - id: pkg_manager
+      prompt: "Package manager?"
+      choices: [npm, pnpm, yarn, bun]
+      default: npm
+
+  steps:                   # ordered setup commands inside the container
+    - name: Install corepack
+      run: corepack enable
+      when:                # run only when option condition matches
+        pkg_manager: npm
+
+    - name: Install pnpm
+      tools: [pnpm]        # logical name → resolved per distro
+      when:
+        pkg_manager: pnpm
+
+  run:                     # commands after all steps
+    - echo "setup complete"
+
+Logical tool names (steps.tools):
+  git, curl, wget, make, cmake, ninja, gcc, clang, python, pip,
+  nodejs, npm, yarn, pnpm, bun, go, rustup, cargo, docker, vim,
+  neovim, tmux, zsh, fish, htop, jq, unzip
+
+---
+
+## Trust model
+
+  Trusted:   templates from the official registry (no prompt)
+  Untrusted: local file paths or third-party URLs (prompt shown)
+
+  Bypass:    dxon create myenv --template ./custom.yaml --trust
+
+---
+
+## Host dependencies (by host distro)
+
+  Arch:         pacman -S arch-install-scripts debootstrap wget curl
+  Debian/Ubuntu: apt install systemd-container debootstrap wget curl arch-install-scripts
+  Fedora:       dnf install systemd-container debootstrap wget curl
+  openSUSE:     zypper install systemd-container debootstrap wget curl
+  Alpine:       NOT supported as a host (systemd-nspawn unavailable)
+
+  Tool → purpose mapping:
+    systemd-nspawn  required to run any container
+    pacstrap        required to bootstrap Arch Linux containers
+    debootstrap     required to bootstrap Debian/Ubuntu containers
+    wget / curl     required to bootstrap Alpine containers
+
+---
+
+## Common AI agent patterns
+
+### Scaffold a project environment
+
+  # Create a Rust container and clone a repo into it
+  dxon create myproject \
+    --distro arch \
+    --template rust \
+    --repo https://github.com/user/myproject \
+    --shell zsh
+
+  # Enter and build
+  dxon enter myproject -- cargo build --release
+
+### Non-interactive scripting (CI / automation)
+
+  # headless creation — no prompts whatsoever
+  dxon create ci-rust \
+    --distro debian \
+    --template rust \
+    --shell bash \
+    --trust
+
+  # run a command and exit
+  dxon enter ci-rust -- cargo test
+
+  # clean up
+  dxon delete ci-rust --force
+
+### Inspect before acting
+
+  dxon list                   # see all containers
+  dxon info myenv             # check distro, template, env vars
+  dxon template search rust   # find a template by keyword
+
+### Custom packages (no template)
+
+  dxon create devbox \
+    --distro arch \
+    --packages git neovim tmux ripgrep fd \
+    --shell zsh \
+    --shell-config bind
+
+### Open workspace in editor
+
+  dxon open myenv/. --editor code
+  dxon open myenv/src --editor cursor
+
+---
+
+## Exit codes
+
+  0   success
+  1   error (message printed to stderr, prefixed with "error:")
+
+---
+
+## FAQs for agents
+
+Q: Does dXon use Docker?
+A: No. It uses systemd-nspawn with pacstrap/debootstrap/Alpine rootfs.
+
+Q: What Linux distributions can be used as the container base?
+A: arch, debian, alpine.
+
+Q: Can I run dXon on macOS?
+A: No. systemd-nspawn is Linux-only.
+
+Q: Where are container files stored?
+A: ~/.dxon/containers/<name>/ by default. Configurable via containers_dir.
+
+Q: How do I run a non-interactive command inside a container?
+A: dxon enter <name> -- <cmd> [args...]
+
+Q: How do I skip trust warnings in automation?
+A: Pass --trust or -y to dxon create.
+
+Q: How do I upgrade dXon itself?
+A: curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/upgrade.sh | sh
+
+Q: What is the config file format?
+A: TOML at ~/.config/dxon/config.toml
+
+Q: Can I use a custom template registry?
+A: Yes. dxon config set registry_url https://your-host/registry.json
+
+---
+
+## Links
+
+  Docs:          https://p8labs.github.io/dxon
+  Source:        https://github.com/P8labs/dxon
+  Registry:      https://github.com/P8labs/dxon-registry
+  Issues:        https://github.com/P8labs/dxon/issues
+  AI agent docs: https://p8labs.github.io/dxon/ai/

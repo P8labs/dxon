@@ -33,17 +33,17 @@ pub enum Distro {
 impl Distro {
     pub fn parse(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
-            "arch"   => Ok(Self::Arch),
+            "arch" => Ok(Self::Arch),
             "debian" => Ok(Self::Debian),
             "alpine" => Ok(Self::Alpine),
-            _        => Err(DxonError::UnsupportedDistro(s.to_string()).into()),
+            _ => Err(DxonError::UnsupportedDistro(s.to_string()).into()),
         }
     }
 }
 
 pub fn bootstrap(distro: &Distro, rootfs: &Path) -> Result<()> {
     match distro {
-        Distro::Arch   => arch::bootstrap(rootfs),
+        Distro::Arch => arch::bootstrap(rootfs),
         Distro::Debian => debian::bootstrap(rootfs),
         Distro::Alpine => alpine::bootstrap(rootfs),
     }

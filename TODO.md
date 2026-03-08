@@ -1,6 +1,9 @@
-[TODO]
-- [ ] Implement container ↔ host communication via Unix socket (Issue #2)
-- [ ] simple install script
+[08/03/2026]
+- [x] Implement container ↔ host communication via Unix socket (Issue [#2](#2))
+- [x] Fixed cannot edit files in code editor (Issue [#4](#4))
+- [x] simple install script
+- [x] Add docs for AI agents
+
 
 
 [06/03/2026]

@@ -103,8 +103,20 @@ fn config_files_for(shell: &str, host_home: &Path) -> Vec<(PathBuf, PathBuf)> {
         .collect()
 }
 
-pub fn apply_copy(rootfs: &Path, host_home: &Path, shell: &str) -> Result<()> {
-    let container_home = rootfs.join("root");
+/// Copy shell config files from the host into the container.
+///
+/// `container_home_abs` is the absolute path of the user's home directory
+/// *inside* the container, e.g. `/home/priyanshu` or `/root`.
+pub fn apply_copy(
+    rootfs: &Path,
+    host_home: &Path,
+    shell: &str,
+    container_home_abs: &Path,
+) -> Result<()> {
+    let rel = container_home_abs
+        .strip_prefix("/")
+        .unwrap_or(container_home_abs);
+    let container_home_fs = rootfs.join(rel);
 
     let files = config_files_for(shell, host_home);
     if files.is_empty() {
@@ -125,16 +137,16 @@ pub fn apply_copy(rootfs: &Path, host_home: &Path, shell: &str) -> Result<()> {
 
     for (host_rel, container_rel) in &files {
         let src = host_home.join(host_rel);
-        let dst = container_home.join(container_rel);
+        let dst = container_home_fs.join(container_rel);
 
         if let Some(parent) = dst.parent() {
             user::privileged_mkdir(parent)?;
         }
 
         if src.is_dir() {
-            copy_dir_all(&src, &dst, host_home, &PathBuf::from("/root"))?;
+            copy_dir_all(&src, &dst, host_home, container_home_abs)?;
         } else {
-            copy_file_with_path_sub(&src, &dst, host_home, &PathBuf::from("/root"))?;
+            copy_file_with_path_sub(&src, &dst, host_home, container_home_abs)?;
         }
 
         println!("  {} {}", "↳".dimmed(), host_rel.display());
@@ -184,14 +196,19 @@ fn copy_file_with_path_sub(
     user::privileged_write(dst, &content)
 }
 
-pub fn bind_args(host_home: &Path, shell: &str) -> Vec<String> {
+/// Build `--bind=` argument strings for systemd-nspawn to live-mount shell
+/// config files from the host into `container_home_abs` inside the container.
+///
+/// `container_home_abs` is the absolute path of the user's home directory
+/// *inside* the container, e.g. `/home/priyanshu` or `/root`.
+pub fn bind_args(host_home: &Path, shell: &str, container_home_abs: &Path) -> Vec<String> {
     let files = config_files_for(shell, host_home);
 
     files
         .into_iter()
         .map(|(host_rel, container_rel)| {
             let host_path = host_home.join(&host_rel);
-            let container_path = PathBuf::from("/root").join(&container_rel);
+            let container_path = container_home_abs.join(&container_rel);
             format!(
                 "--bind={}:{}",
                 host_path.display(),

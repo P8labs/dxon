@@ -9,7 +9,9 @@ use crate::container::store::ContainerStore;
 use crate::error::DxonError;
 use crate::runtime::bootstrap::{bootstrap, Distro};
 use crate::runtime::host::HostInfo;
-use crate::runtime::nspawn::{install_packages_with_fallback, require_nspawn, run_command};
+use crate::runtime::nspawn::{
+    ensure_container_user, install_packages_with_fallback, require_nspawn, run_command,
+};
 use crate::runtime::packages::translate_list;
 use crate::template;
 use crate::template::builtin;
@@ -180,10 +182,10 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         let default_idx = cfg
             .copy_shell_config
             .as_deref()
-            .and_then(|m| match m {
-                "copy" => Some(1usize),
-                "bind" => Some(2usize),
-                _ => Some(0usize),
+            .map(|m| match m {
+                "copy" => 1usize,
+                "bind" => 2usize,
+                _ => 0usize,
             })
             .unwrap_or(0);
 
@@ -232,6 +234,8 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
     store.create_dirs(&name)?;
     let rootfs = store.rootfs_dir(&name);
 
+    let host_user = user::detect_host_user();
+
     let provision_result = provision(
         &rootfs,
         &distro_str,
@@ -241,6 +245,7 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         &args.packages,
         chosen_shell.as_deref(),
         repo.as_deref(),
+        &host_user,
     );
 
     if let Err(e) = provision_result {
@@ -265,24 +270,43 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         meta.config.env = t.runtime.env.clone();
     }
 
+    if host_user.uid != 0 {
+        meta.config.container_user = Some(host_user.username.clone());
+        meta.config.container_uid = Some(host_user.uid);
+        meta.config.container_gid = Some(host_user.gid);
+        meta.config.workspace_dir = Some("/workspace".to_string());
+    }
+
     if let Some(ref mode_str) = chosen_shell_config {
-        let mode = crate::shell_config::ShellConfigMode::parse(mode_str).map_err(|e| {
+        let mode = crate::shell_config::ShellConfigMode::parse(mode_str).inspect_err(|_| {
             let _ = store.remove(&name);
-            e
         })?;
         let host_home = user::resolve_home();
         let shell_name = chosen_shell.as_deref().unwrap_or("bash");
 
+        // Resolve the container user's home directory (e.g. /home/priyanshu or /root).
+        let container_home_abs = if host_user.uid == 0 {
+            std::path::PathBuf::from("/root")
+        } else {
+            std::path::PathBuf::from(format!("/home/{}", host_user.username))
+        };
+
         match mode {
             crate::shell_config::ShellConfigMode::Copy => {
-                crate::shell_config::apply_copy(&rootfs, &host_home, shell_name).map_err(|e| {
+                crate::shell_config::apply_copy(
+                    &rootfs,
+                    &host_home,
+                    shell_name,
+                    &container_home_abs,
+                )
+                .inspect_err(|_| {
                     let _ = store.remove(&name);
-                    e
                 })?;
                 meta.config.shell_config_mode = Some("copy".to_string());
             }
             crate::shell_config::ShellConfigMode::Bind => {
-                let bind_args = crate::shell_config::bind_args(&host_home, shell_name);
+                let bind_args =
+                    crate::shell_config::bind_args(&host_home, shell_name, &container_home_abs);
                 meta.config.extra_args.extend(bind_args);
                 meta.config.shell_config_mode = Some("bind".to_string());
             }
@@ -318,6 +342,15 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         name.cyan().bold()
     );
     println!("  rootfs:  {}", rootfs.display().to_string().dimmed());
+    if host_user.uid != 0 {
+        println!(
+            "  user:    {} (uid={}, gid={})",
+            host_user.username.dimmed(),
+            host_user.uid,
+            host_user.gid
+        );
+        println!("  workdir: {}", "/workspace".dimmed());
+    }
     if let Some(ref shell) = chosen_shell {
         println!("  shell:   {}", shell.dimmed());
     }
@@ -346,6 +379,7 @@ fn step_applies(step: &Step, distro: &str, answers: &HashMap<String, String>) ->
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 fn provision(
     rootfs: &std::path::Path,
     distro_str: &str,
@@ -355,9 +389,14 @@ fn provision(
     extra_packages: &[String],
     chosen_shell: Option<&str>,
     repo: Option<&str>,
+    host_user: &user::HostUser,
 ) -> Result<(Vec<String>, Option<String>)> {
     println!("{} bootstrapping {} rootfs…", "→".cyan(), distro_str.bold());
     bootstrap(distro, rootfs)?;
+
+    // Create a matching user/group inside the container so that file
+    // ownership inside /workspace matches the host user.
+    ensure_container_user(rootfs, &host_user.username, host_user.uid, host_user.gid)?;
 
     let mut installed_packages: Vec<String> = Vec::new();
 
@@ -427,17 +466,45 @@ fn provision(
 
         let shell_path = format!("/bin/{shell}");
         let shell_bin = format!("/usr/{shell}");
-        let chsh_cmd = format!(
+        // Set the default shell for root.
+        let chsh_root = format!(
             "chsh -s {shell_path} root 2>/dev/null || chsh -s {shell_bin} root 2>/dev/null || true"
         );
-        let _ = run_command(rootfs, &chsh_cmd, &HashMap::new());
+        let _ = run_command(rootfs, &chsh_root, &HashMap::new());
+
+        // Also set the default shell for the mapped container user.
+        if host_user.uid != 0 {
+            let chsh_user = format!(
+                "chsh -s {shell_path} {username} 2>/dev/null || chsh -s {shell_bin} {username} 2>/dev/null || true",
+                username = host_user.username
+            );
+            let _ = run_command(rootfs, &chsh_user, &HashMap::new());
+        }
     }
 
+    // Create /workspace and assign it to the mapped user so the host user
+    // can write project files without permission errors.
+    run_command(rootfs, "mkdir -p /workspace", &HashMap::new())?;
+
     let final_repo = if let Some(url) = repo {
-        println!("{} cloning {}…", "→".cyan(), url.bold());
+        // Derive the target directory name from the URL, stripping a trailing
+        // ".git" suffix if present (e.g. "https://github.com/foo/bar.git" → "bar").
+        let repo_name = url
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or("repo")
+            .trim_end_matches(".git");
+        let clone_dest = format!("/workspace/{repo_name}");
+        println!(
+            "{} cloning {} into {}…",
+            "→".cyan(),
+            url.bold(),
+            clone_dest.dimmed()
+        );
         run_command(
             rootfs,
-            &format!("git clone {url} /workspace"),
+            &format!("git clone {url} {clone_dest}"),
             &HashMap::new(),
         )
         .map_err(|_| DxonError::GitCloneFailed(url.to_string()))?;
@@ -445,6 +512,11 @@ fn provision(
     } else {
         None
     };
+
+    // Recursively chown /workspace to the mapped UID/GID (covers both the
+    // empty directory case and any files placed there by git clone above).
+    let chown_cmd = format!("chown -R {}:{} /workspace", host_user.uid, host_user.gid);
+    let _ = run_command(rootfs, &chown_cmd, &HashMap::new());
 
     Ok((installed_packages, final_repo))
 }

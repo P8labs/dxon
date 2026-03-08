@@ -71,28 +71,34 @@ dxon create myenv --distro arch --shell zsh --shell-config bind
 
 ```sh
 dxon enter myenv
+dxon enter myenv/project-a
 ```
 
 This drops you into an interactive shell inside the container using the shell that was chosen at creation time. If no shell was configured, `bash` is used.
 
+When you pass `container/subfolder`, dXon enters the same container but starts in `/workspace/subfolder`.
+
 ## Opening a container in an editor
 
 ```sh
-dxon open myenv
+dxon open myenv/.
+dxon open myenv/project-a
 ```
 
-Opens the container's `/workspace` directory (or root filesystem if no workspace exists) in a supported code editor. Editors are detected automatically in this order: VS Code (`code`), Cursor (`cursor`), Zed (`zed`).
+Opens a folder from the container's `/workspace/<folder>` on the host in a supported code editor. Editors are detected automatically in this order: VS Code (`code`), Cursor (`cursor`), Zed (`zed`).
 
 To use a specific editor:
 
 ```sh
-dxon open myenv --editor cursor
-dxon open myenv --editor zed
+dxon open myenv/project-a --editor cursor
+dxon open myenv/project-a --editor zed
 ```
+
+Inside a container entered with `dxon enter ...`, `dxon open .` automatically forwards to the host through `/run/dxon.sock` and opens the matching host folder.
 
 ### VS Code / Cursor terminal integration
 
-When opening with VS Code or Cursor, dXon automatically writes a `.vscode/settings.json` inside the workspace that configures a **dXon** terminal profile. This profile runs `dxon enter <name>` so that every integrated terminal you open is already inside the container.
+When opening with VS Code or Cursor, dXon automatically writes a `.vscode/settings.json` inside the workspace that configures a **dXon** terminal profile. This profile runs `dxon enter <name>/<folder>` so that every integrated terminal you open starts in the same folder inside the container.
 
 The profile is set as the default terminal, so pressing `` Ctrl+` `` drops you directly into the container shell.
 

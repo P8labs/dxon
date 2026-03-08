@@ -3,10 +3,70 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
-use users::{get_current_uid, get_user_by_name, os::unix::UserExt};
+use users::{
+    get_current_gid, get_current_uid, get_user_by_name, get_user_by_uid, os::unix::UserExt,
+};
 
 pub fn is_root() -> bool {
     get_current_uid() == 0
+}
+
+/// Information about the host user that should be mapped into the container.
+#[derive(Debug, Clone)]
+pub struct HostUser {
+    pub username: String,
+    pub uid: u32,
+    pub gid: u32,
+}
+
+/// Detect the effective host user.
+///
+/// When running under `sudo`, returns the original (pre-sudo) user so that
+/// container ownership matches the person who invoked dxon, not root.
+pub fn detect_host_user() -> HostUser {
+    if is_root() {
+        if let Ok(sudo_user) = env::var("SUDO_USER") {
+            if !sudo_user.is_empty() {
+                if let Some(user) = get_user_by_name(sudo_user.as_str()) {
+                    return HostUser {
+                        username: sudo_user,
+                        uid: user.uid(),
+                        gid: user.primary_group_id(),
+                    };
+                }
+            }
+        }
+        // Truly running as root (not via sudo).
+        return HostUser {
+            username: "root".to_string(),
+            uid: 0,
+            gid: 0,
+        };
+    }
+
+    let uid = get_current_uid();
+    let gid = get_current_gid();
+
+    let username = if let Some(user) = get_user_by_uid(uid) {
+        user.name().to_string_lossy().into_owned()
+    } else {
+        // Fallback: walk /etc/passwd manually.
+        std::fs::read_to_string("/etc/passwd")
+            .ok()
+            .and_then(|contents| {
+                contents.lines().find_map(|line| {
+                    let parts: Vec<&str> = line.splitn(4, ':').collect();
+                    if parts.len() >= 3 && parts[2] == uid.to_string() {
+                        Some(parts[0].to_string())
+                    } else {
+                        None
+                    }
+                })
+            })
+            .unwrap_or_else(|| format!("user{uid}"))
+    };
+
+    HostUser { username, uid, gid }
 }
 
 pub fn resolve_home() -> PathBuf {
@@ -70,7 +130,7 @@ pub fn privileged_read(path: &Path) -> Result<String> {
         Err(e) => return Err(e.into()),
     }
     let out = Command::new("sudo")
-        .args(["cat", &path.to_string_lossy().as_ref()])
+        .args(["cat", path.to_string_lossy().as_ref()])
         .output()?;
     if !out.status.success() {
         anyhow::bail!("sudo cat {} failed", path.display());

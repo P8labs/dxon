@@ -6,7 +6,11 @@ use crate::container::store::ContainerStore;
 
 pub fn run(store: &ContainerStore, name: &str, force: bool) -> Result<()> {
     if !store.exists(name) {
-        eprintln!("{} container '{}' does not exist", "error:".red().bold(), name);
+        eprintln!(
+            "{} container '{}' does not exist",
+            "error:".red().bold(),
+            name
+        );
         std::process::exit(1);
     }
 
@@ -23,6 +27,10 @@ pub fn run(store: &ContainerStore, name: &str, force: bool) -> Result<()> {
     }
 
     store.remove(name)?;
-    println!("{} Container '{}' deleted.", "✓".green().bold(), name.cyan());
+    println!(
+        "{} Container '{}' deleted.",
+        "✓".green().bold(),
+        name.cyan()
+    );
     Ok(())
 }

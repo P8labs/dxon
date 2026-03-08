@@ -6,11 +6,11 @@ use crate::error::DxonError;
 
 pub fn bootstrap(rootfs: &Path) -> Result<()> {
     super::require_tool("curl", "your-package-manager install curl")?;
-    super::require_tool("tar",  "your-package-manager install tar")?;
+    super::require_tool("tar", "your-package-manager install tar")?;
 
     let apk_arch = match std::env::consts::ARCH {
         "aarch64" => "aarch64",
-        _         => "x86_64",
+        _ => "x86_64",
     };
 
     let url = format!(
@@ -38,7 +38,12 @@ pub fn bootstrap(rootfs: &Path) -> Result<()> {
     std::fs::create_dir_all(rootfs)?;
 
     let extract = Command::new("tar")
-        .args(["-xzf", tarball.to_str().unwrap(), "-C", rootfs.to_str().unwrap()])
+        .args([
+            "-xzf",
+            tarball.to_str().unwrap(),
+            "-C",
+            rootfs.to_str().unwrap(),
+        ])
         .status()
         .map_err(|e| DxonError::BootstrapFailed {
             distro: "alpine".into(),
