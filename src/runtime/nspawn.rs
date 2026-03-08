@@ -62,7 +62,7 @@ pub fn install_packages_with_fallback(
     );
 
     for pkg in packages {
-        let single_cmd = pkg_install_cmd(distro, &[pkg.clone()]);
+        let single_cmd = pkg_install_cmd(distro, std::slice::from_ref(pkg));
         if run_command(rootfs, &single_cmd, env).is_ok() {
             continue;
         }
@@ -121,7 +121,7 @@ fn prompt_package_failure(
             let replacement: String = Input::with_theme(&theme)
                 .with_prompt("Replacement package name")
                 .interact_text()?;
-            let cmd = pkg_install_cmd(distro, &[replacement.clone()]);
+            let cmd = pkg_install_cmd(distro, std::slice::from_ref(&replacement));
             run_command(rootfs, &cmd, env).map_err(|_| {
                 DxonError::BootstrapFailed {
                     distro: distro.into(),

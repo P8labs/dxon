@@ -130,7 +130,7 @@ pub fn privileged_read(path: &Path) -> Result<String> {
         Err(e) => return Err(e.into()),
     }
     let out = Command::new("sudo")
-        .args(["cat", &path.to_string_lossy().as_ref()])
+        .args(["cat", path.to_string_lossy().as_ref()])
         .output()?;
     if !out.status.success() {
         anyhow::bail!("sudo cat {} failed", path.display());

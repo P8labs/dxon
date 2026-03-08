@@ -177,8 +177,10 @@ mod tests {
 
     #[test]
     fn effective_registry_url_returns_configured_value() {
-        let mut cfg = Config::default();
-        cfg.registry_url = Some("https://my-registry.example.com".into());
+        let cfg = Config {
+            registry_url: Some("https://my-registry.example.com".into()),
+            ..Default::default()
+        };
         assert_eq!(
             cfg.effective_registry_url(),
             "https://my-registry.example.com"
@@ -187,32 +189,40 @@ mod tests {
 
     #[test]
     fn containers_dir_cli_override_takes_highest_priority() {
-        let mut cfg = Config::default();
-        cfg.containers_dir = Some("/from/config".into());
+        let cfg = Config {
+            containers_dir: Some("/from/config".into()),
+            ..Default::default()
+        };
         let result = cfg.containers_dir(Some("/from/cli")).unwrap();
         assert_eq!(result, PathBuf::from("/from/cli"));
     }
 
     #[test]
     fn containers_dir_config_value_used_when_no_cli_override() {
-        let mut cfg = Config::default();
-        cfg.containers_dir = Some("/from/config".into());
+        let cfg = Config {
+            containers_dir: Some("/from/config".into()),
+            ..Default::default()
+        };
         let result = cfg.containers_dir(None).unwrap();
         assert_eq!(result, PathBuf::from("/from/config"));
     }
 
     #[test]
     fn containers_dir_empty_cli_override_falls_through_to_config() {
-        let mut cfg = Config::default();
-        cfg.containers_dir = Some("/from/config".into());
+        let cfg = Config {
+            containers_dir: Some("/from/config".into()),
+            ..Default::default()
+        };
         let result = cfg.containers_dir(Some("")).unwrap();
         assert_eq!(result, PathBuf::from("/from/config"));
     }
 
     #[test]
     fn containers_dir_empty_config_value_falls_through_to_default() {
-        let mut cfg = Config::default();
-        cfg.containers_dir = Some("".into());
+        let cfg = Config {
+            containers_dir: Some("".into()),
+            ..Default::default()
+        };
         let result = cfg.containers_dir(None).unwrap();
         let s = result.to_string_lossy();
         assert!(s.contains(".dxon") && s.contains("containers"));
@@ -235,10 +245,12 @@ mod tests {
 
     #[test]
     fn config_serializes_and_deserializes_via_toml() {
-        let mut cfg = Config::default();
-        cfg.containers_dir = Some("/tmp/containers".into());
-        cfg.default_distro = Some("debian".into());
-        cfg.default_template = Some("rust".into());
+        let cfg = Config {
+            containers_dir: Some("/tmp/containers".into()),
+            default_distro: Some("debian".into()),
+            default_template: Some("rust".into()),
+            ..Default::default()
+        };
 
         let toml_str = toml::to_string_pretty(&cfg).unwrap();
         let restored: Config = toml::from_str(&toml_str).unwrap();

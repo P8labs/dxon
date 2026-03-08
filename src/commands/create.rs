@@ -182,10 +182,10 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         let default_idx = cfg
             .copy_shell_config
             .as_deref()
-            .and_then(|m| match m {
-                "copy" => Some(1usize),
-                "bind" => Some(2usize),
-                _ => Some(0usize),
+            .map(|m| match m {
+                "copy" => 1usize,
+                "bind" => 2usize,
+                _ => 0usize,
             })
             .unwrap_or(0);
 
@@ -278,9 +278,8 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
     }
 
     if let Some(ref mode_str) = chosen_shell_config {
-        let mode = crate::shell_config::ShellConfigMode::parse(mode_str).map_err(|e| {
+        let mode = crate::shell_config::ShellConfigMode::parse(mode_str).inspect_err(|_| {
             let _ = store.remove(&name);
-            e
         })?;
         let host_home = user::resolve_home();
         let shell_name = chosen_shell.as_deref().unwrap_or("bash");
@@ -300,9 +299,8 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
                     shell_name,
                     &container_home_abs,
                 )
-                .map_err(|e| {
+                .inspect_err(|_| {
                     let _ = store.remove(&name);
-                    e
                 })?;
                 meta.config.shell_config_mode = Some("copy".to_string());
             }
@@ -381,6 +379,7 @@ fn step_applies(step: &Step, distro: &str, answers: &HashMap<String, String>) ->
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 fn provision(
     rootfs: &std::path::Path,
     distro_str: &str,

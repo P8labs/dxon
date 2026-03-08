@@ -255,7 +255,7 @@ mod tests {
         let files: std::collections::HashSet<_> = std::fs::read_dir(&cache)
             .unwrap()
             .flatten()
-            .filter(|e| e.path().extension().map_or(false, |x| x == "yaml"))
+            .filter(|e| e.path().extension().is_some_and(|x| x == "yaml"))
             .map(|e| e.path().file_stem().unwrap().to_string_lossy().to_string())
             .collect();
 
