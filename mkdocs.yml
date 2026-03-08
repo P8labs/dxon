@@ -73,6 +73,7 @@ nav:
   - Registry: registry.md
   - Configuration: configuration.md
   - Security: security.md
+  - AI / Agents: ai.md
 
 
 extra:
