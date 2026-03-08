@@ -774,6 +774,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI / Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1094,18 +1121,22 @@
 </ul>
 <h2 id="entering-a-container">Entering a container<a class="headerlink" href="#entering-a-container" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>dxon<span class="w"> </span>enter<span class="w"> </span>myenv/project-a
 </code></pre></div>
 <p>This drops you into an interactive shell inside the container using the shell that was chosen at creation time. If no shell was configured, <code>bash</code> is used.</p>
+<p>When you pass <code>container/subfolder</code>, dXon enters the same container but starts in <code>/workspace/subfolder</code>.</p>
 <h2 id="opening-a-container-in-an-editor">Opening a container in an editor<a class="headerlink" href="#opening-a-container-in-an-editor" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv/.
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv/project-a
 </code></pre></div>
-<p>Opens the container's <code>/workspace</code> directory (or root filesystem if no workspace exists) in a supported code editor. Editors are detected automatically in this order: VS Code (<code>code</code>), Cursor (<code>cursor</code>), Zed (<code>zed</code>).</p>
+<p>Opens a folder from the container's <code>/workspace/&lt;folder&gt;</code> on the host in a supported code editor. Editors are detected automatically in this order: VS Code (<code>code</code>), Cursor (<code>cursor</code>), Zed (<code>zed</code>).</p>
 <p>To use a specific editor:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv<span class="w"> </span>--editor<span class="w"> </span>cursor
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv<span class="w"> </span>--editor<span class="w"> </span>zed
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv/project-a<span class="w"> </span>--editor<span class="w"> </span>cursor
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>dxon<span class="w"> </span>open<span class="w"> </span>myenv/project-a<span class="w"> </span>--editor<span class="w"> </span>zed
 </code></pre></div>
+<p>Inside a container entered with <code>dxon enter ...</code>, <code>dxon open .</code> automatically forwards to the host through <code>/run/dxon.sock</code> and opens the matching host folder.</p>
 <h3 id="vs-code-cursor-terminal-integration">VS Code / Cursor terminal integration<a class="headerlink" href="#vs-code-cursor-terminal-integration" title="Permanent link">&para;</a></h3>
-<p>When opening with VS Code or Cursor, dXon automatically writes a <code>.vscode/settings.json</code> inside the workspace that configures a <strong>dXon</strong> terminal profile. This profile runs <code>dxon enter &lt;name&gt;</code> so that every integrated terminal you open is already inside the container.</p>
+<p>When opening with VS Code or Cursor, dXon automatically writes a <code>.vscode/settings.json</code> inside the workspace that configures a <strong>dXon</strong> terminal profile. This profile runs <code>dxon enter &lt;name&gt;/&lt;folder&gt;</code> so that every integrated terminal you open starts in the same folder inside the container.</p>
 <p>The profile is set as the default terminal, so pressing <code>Ctrl+`</code> drops you directly into the container shell.</p>
 <h3 id="zed">Zed<a class="headerlink" href="#zed" title="Permanent link">&para;</a></h3>
 <p>Zed does not yet support automatic terminal profile injection. Use <code>dxon enter &lt;name&gt;</code> from a host terminal alongside Zed.</p>
