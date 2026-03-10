@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::process::{Command, Output};
 use tempfile::TempDir;
 
-
 fn dxon_bin() -> PathBuf {
     let mut path = std::env::current_exe()
         .expect("cannot determine current exe path")
@@ -92,7 +91,6 @@ impl TestEnv {
     }
 }
 
-
 #[test]
 fn help_exits_zero() {
     let env = TestEnv::new();
@@ -139,7 +137,6 @@ fn no_subcommand_shows_help_and_fails() {
         out.status
     );
 }
-
 
 #[test]
 fn list_empty_store_exits_zero() {
@@ -195,7 +192,6 @@ fn list_shows_multiple_fake_containers() {
     );
 }
 
-
 #[test]
 fn info_nonexistent_container_fails() {
     let env = TestEnv::new();
@@ -247,7 +243,6 @@ fn info_fake_container_shows_packages() {
     );
 }
 
-
 #[test]
 fn delete_nonexistent_container_fails() {
     let env = TestEnv::new();
@@ -294,7 +289,6 @@ fn delete_force_outputs_confirmation() {
         "expected deletion confirmation in output, got:\n{stdout}"
     );
 }
-
 
 #[test]
 fn config_show_exits_zero() {
@@ -422,7 +416,6 @@ fn config_set_registry_url_succeeds() {
     );
 }
 
-
 #[test]
 #[ignore = "requires network access to the remote registry"]
 fn template_list_exits_zero() {
@@ -471,7 +464,6 @@ fn template_refresh_exits_zero() {
     );
 }
 
-
 #[test]
 #[ignore = "requires pacstrap / debootstrap / systemd-nspawn and root privileges"]
 fn create_arch_container_full_lifecycle() {
@@ -504,7 +496,6 @@ fn create_arch_container_full_lifecycle() {
         "container should be gone after delete"
     );
 }
-
 
 #[test]
 fn dir_flag_uses_specified_directory() {
