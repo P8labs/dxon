@@ -80,7 +80,7 @@ detect_platform() {
 # ── download & install ─────────────────────────────────────────────────────────
 
 download_and_install() {
-    ASSET="${BINARY}-${OS}-${ARCH}"
+    ASSET="${BINARY}-${LATEST}-${OS}-${ARCH}"
     URL="https://github.com/${REPO}/releases/download/${LATEST}/${ASSET}"
 
     TMP="$(mktemp)"

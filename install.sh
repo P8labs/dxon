@@ -66,7 +66,7 @@ latest_version() {
 # ── download binary ────────────────────────────────────────────────────────────
 
 download() {
-    ASSET="${BINARY}-${OS}-${ARCH}"
+    ASSET="${BINARY}-${VERSION}-${OS}-${ARCH}"
     URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET}"
 
     TMP="$(mktemp)"
@@ -86,7 +86,7 @@ download() {
     echo "$TMP"
 }
 
-# ── install binary ─────────────────────────────────────────────────────────────
+# ── install binary ───────────────────────────────────────────download/v0.3.0/dxon-linux-x86_64──────────────────
 
 install_bin() {
     TMPFILE="$1"
