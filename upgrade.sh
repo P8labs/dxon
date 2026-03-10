@@ -70,7 +70,7 @@ detect_platform() {
         *)      error "unsupported OS: $OS" ;;
     esac
     case "$ARCH" in
-        x86_64 | amd64)         ARCH="x86_64" ;;
+        x86_64 | amd64)         ARCH="amd64" ;;
         aarch64 | arm64)        ARCH="aarch64" ;;
         armv7l | armv7 | armhf) ARCH="armv7" ;;
         *)  error "unsupported architecture: $ARCH" ;;
