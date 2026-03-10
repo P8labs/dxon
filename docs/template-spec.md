@@ -20,7 +20,7 @@ Every field is optional except `schema` and `name`.
 | `schema` | `string` | **yes** | Must be `dxon/v1` |
 | `name` | `string` | **yes** | Short identifier shown in the registry, no spaces |
 | `description` | `string` | no | One-line description of the environment |
-| `base` | `string` | no | Suggested base distribution: `arch`, `debian`, or `alpine` |
+| `base` | `string` | no | Pinned base distribution for this template: `arch`, `debian`, or `alpine` |
 | `packages` | `map<distro, list<string>>` | no | Per-distro package lists installed before steps run |
 | `env` | `map<string, string>` | no | Environment variables set inside the container |
 | `run` | `list<string>` | no | Commands run after all steps complete |
@@ -43,6 +43,16 @@ packages:
 dXon selects the list matching the chosen distribution and installs those packages before running any steps. If no entry exists for the chosen distribution, the field is silently skipped.
 
 Supported keys: `arch`, `debian`, `alpine`.
+
+If your template is intentionally distro-specific, set `base` and only define that distro key in `packages`.
+
+```yaml
+base: debian
+packages:
+  debian: [curl, git, ca-certificates]
+```
+
+When `base` is set, `dxon create --template ...` automatically uses that distro.
 
 ---
 

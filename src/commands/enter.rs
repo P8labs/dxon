@@ -290,15 +290,6 @@ fn sanitize_workspace_subpath(raw: &str) -> Result<PathBuf> {
     Ok(out)
 }
 
-/// Remove a stale `/run/systemd/nspawn/unix-export/<machine_name>` mount point
-/// left behind by a container that exited uncleanly (crash, OOM, SIGKILL, etc.).
-///
-/// When systemd-nspawn starts with `--machine=<name>` it bind-mounts a socket
-/// under that path. Normally nspawn cleans it up on exit, but after an unclean
-/// shutdown the mount point persists and the next `systemd-nspawn --machine=<name>`
-/// invocation refuses to start with "Mount point … exists already, refusing."
-///
-/// This is only called after confirming the machine is NOT currently running.
 fn cleanup_stale_nspawn_machine(machine_name: &str) {
     let socket_path = format!("/run/systemd/nspawn/unix-export/{machine_name}");
 
@@ -306,7 +297,6 @@ fn cleanup_stale_nspawn_machine(machine_name: &str) {
         return;
     }
 
-    // 1. Ask machinectl to terminate — it knows how to clean up registered machines.
     if crate::user::command_available("machinectl") {
         let _ = crate::user::privileged_command("machinectl")
             .arg("terminate")
@@ -316,7 +306,6 @@ fn cleanup_stale_nspawn_machine(machine_name: &str) {
             .status();
     }
 
-    // 2. If still present it is likely a stale bind-mount; unmount it lazily.
     if std::path::Path::new(&socket_path).exists() {
         let _ = crate::user::privileged_command("umount")
             .arg("--lazy")
@@ -326,7 +315,6 @@ fn cleanup_stale_nspawn_machine(machine_name: &str) {
             .status();
     }
 
-    // 3. Last resort: plain removal (works when the path is only a dead socket file).
     if std::path::Path::new(&socket_path).exists() {
         let _ = crate::user::privileged_command("rm")
             .arg("-f")

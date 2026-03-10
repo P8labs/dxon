@@ -46,36 +46,6 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         return Err(DxonError::ContainerExists(name).into());
     }
 
-    let distro_choices = &["arch", "debian", "alpine"];
-
-    let distro_str: String = match args.distro {
-        Some(d) => d,
-        None => {
-            let default_idx = cfg
-                .default_distro
-                .as_deref()
-                .and_then(|d| distro_choices.iter().position(|&c| c == d))
-                .unwrap_or(0);
-
-            let idx = Select::with_theme(&theme)
-                .with_prompt("Base distribution")
-                .items(distro_choices)
-                .default(default_idx)
-                .interact()?;
-            distro_choices[idx].to_string()
-        }
-    };
-    let distro = Distro::parse(&distro_str)?;
-
-    let (bootstrap_tool, hint) = host.bootstrap_tool_for(&distro_str);
-    if !user::command_available(bootstrap_tool) {
-        return Err(DxonError::MissingTool {
-            tool: bootstrap_tool.to_string(),
-            hint: format!("on {}: {hint}", host.pretty_name),
-        }
-        .into());
-    }
-
     let (tmpl, tmpl_name): (Option<DxTemplate>, Option<String>) = match args.template {
         Some(ref t) => {
             let (loaded, source) = template::resolve(t, cfg.effective_registry_url())?;
@@ -111,6 +81,49 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
             }
         }
     };
+
+    let distro_choices = &["arch", "debian", "alpine"];
+    let template_distro = tmpl.as_ref().and_then(|t| t.pinned_distro());
+
+    let distro_str: String = match (args.distro, template_distro) {
+        (Some(requested), Some(pinned)) => {
+            if requested != pinned {
+                anyhow::bail!(
+                    "template '{}' is pinned to distro '{}' but '--distro {}' was provided",
+                    tmpl_name.as_deref().unwrap_or("<template>"),
+                    pinned,
+                    requested
+                );
+            }
+            requested
+        }
+        (Some(requested), None) => requested,
+        (None, Some(pinned)) => pinned.to_string(),
+        (None, None) => {
+            let default_idx = cfg
+                .default_distro
+                .as_deref()
+                .and_then(|d| distro_choices.iter().position(|&c| c == d))
+                .unwrap_or(0);
+
+            let idx = Select::with_theme(&theme)
+                .with_prompt("Base distribution")
+                .items(distro_choices)
+                .default(default_idx)
+                .interact()?;
+            distro_choices[idx].to_string()
+        }
+    };
+    let distro = Distro::parse(&distro_str)?;
+
+    let (bootstrap_tool, hint) = host.bootstrap_tool_for(&distro_str);
+    if !user::command_available(bootstrap_tool) {
+        return Err(DxonError::MissingTool {
+            tool: bootstrap_tool.to_string(),
+            hint: format!("on {}: {hint}", host.pretty_name),
+        }
+        .into());
+    }
 
     let mut answers: HashMap<String, String> = HashMap::new();
     if let Some(ref t) = tmpl {
@@ -284,7 +297,6 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
         let host_home = user::resolve_home();
         let shell_name = chosen_shell.as_deref().unwrap_or("bash");
 
-        // Resolve the container user's home directory (e.g. /home/priyanshu or /root).
         let container_home_abs = if host_user.uid == 0 {
             std::path::PathBuf::from("/root")
         } else {
@@ -394,8 +406,6 @@ fn provision(
     println!("{} bootstrapping {} rootfs…", "→".cyan(), distro_str.bold());
     bootstrap(distro, rootfs)?;
 
-    // Create a matching user/group inside the container so that file
-    // ownership inside /workspace matches the host user.
     ensure_container_user(rootfs, &host_user.username, host_user.uid, host_user.gid)?;
 
     let mut installed_packages: Vec<String> = Vec::new();
@@ -466,13 +476,11 @@ fn provision(
 
         let shell_path = format!("/bin/{shell}");
         let shell_bin = format!("/usr/{shell}");
-        // Set the default shell for root.
         let chsh_root = format!(
             "chsh -s {shell_path} root 2>/dev/null || chsh -s {shell_bin} root 2>/dev/null || true"
         );
         let _ = run_command(rootfs, &chsh_root, &HashMap::new());
 
-        // Also set the default shell for the mapped container user.
         if host_user.uid != 0 {
             let chsh_user = format!(
                 "chsh -s {shell_path} {username} 2>/dev/null || chsh -s {shell_bin} {username} 2>/dev/null || true",
@@ -482,13 +490,9 @@ fn provision(
         }
     }
 
-    // Create /workspace and assign it to the mapped user so the host user
-    // can write project files without permission errors.
     run_command(rootfs, "mkdir -p /workspace", &HashMap::new())?;
 
     let final_repo = if let Some(url) = repo {
-        // Derive the target directory name from the URL, stripping a trailing
-        // ".git" suffix if present (e.g. "https://github.com/foo/bar.git" → "bar").
         let repo_name = url
             .trim_end_matches('/')
             .rsplit('/')
@@ -513,8 +517,6 @@ fn provision(
         None
     };
 
-    // Recursively chown /workspace to the mapped UID/GID (covers both the
-    // empty directory case and any files placed there by git clone above).
     let chown_cmd = format!("chown -R {}:{} /workspace", host_user.uid, host_user.gid);
     let _ = run_command(rootfs, &chown_cmd, &HashMap::new());
 

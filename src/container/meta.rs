@@ -22,16 +22,12 @@ pub struct ContainerConfig {
     pub shell: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shell_config_mode: Option<String>,
-    /// Username mapped from the host into the container (e.g. "priyanshu").
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub container_user: Option<String>,
-    /// UID of the mapped user inside the container.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub container_uid: Option<u32>,
-    /// GID of the mapped user inside the container.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub container_gid: Option<u32>,
-    /// Default working directory when entering the container (e.g. "/workspace").
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace_dir: Option<String>,
 }

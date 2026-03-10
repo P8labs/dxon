@@ -1,20 +1,16 @@
 #!/usr/bin/env sh
-# dXon upgrade script
-# Usage: curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/upgrade.sh | sh
 
 set -e
 
 REPO="P8labs/dxon"
 BINARY="dxon"
 
-# ── helpers ────────────────────────────────────────────────────────────────────
 
 info()  { printf '\033[0;34m  info\033[0m  %s\n' "$*"; }
 ok()    { printf '\033[0;32m    ok\033[0m  %s\n' "$*"; }
 warn()  { printf '\033[0;33m  warn\033[0m  %s\n' "$*" >&2; }
 error() { printf '\033[0;31m error\033[0m  %s\n' "$*" >&2; exit 1; }
 
-# ── find current install ───────────────────────────────────────────────────────
 
 find_current() {
     CURRENT_BIN="$(command -v "$BINARY" 2>/dev/null)"
@@ -30,7 +26,6 @@ find_current() {
     info "current: ${CURRENT_VERSION:-(unknown)} at ${CURRENT_BIN}"
 }
 
-# ── fetch latest release tag ───────────────────────────────────────────────────
 
 latest_version() {
     if command -v curl >/dev/null 2>&1; then
@@ -50,16 +45,13 @@ latest_version() {
     info "latest:  ${LATEST}"
 }
 
-# ── version comparison helper ─────────────────────────────────────────────────-
 
-# Strips a leading 'v' for comparison: v0.3.0 → 0.3.0
 strip_v() { echo "${1#v}"; }
 
 already_current() {
     [ "$(strip_v "$CURRENT_VERSION")" = "$(strip_v "$LATEST")" ]
 }
 
-# ── detect OS / arch ───────────────────────────────────────────────────────────
 
 detect_platform() {
     OS="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
@@ -77,7 +69,6 @@ detect_platform() {
     esac
 }
 
-# ── download & install ─────────────────────────────────────────────────────────
 
 download_and_install() {
     ASSET="${BINARY}-${LATEST}-${OS}-${ARCH}"
@@ -112,7 +103,6 @@ download_and_install() {
     fi
 }
 
-# ── main ───────────────────────────────────────────────────────────────────────
 
 main() {
     find_current
