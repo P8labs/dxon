@@ -476,7 +476,6 @@ mod tests {
         fs::create_dir_all(&vscode).unwrap();
 
         let jsonc = r#"{
-    // User preference
     "editor.tabSize": 4
 }"#;
         fs::write(vscode.join("settings.json"), jsonc).unwrap();

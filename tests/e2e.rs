@@ -1,35 +1,14 @@
-/// End-to-end tests for the `dxon` binary.
-///
-/// Each test invokes the real binary against a fully-isolated temporary home
-/// directory (`HOME`) and containers directory (`DXON_DIR`), so they never
-/// touch the developer's real config or containers.
-///
-/// Tests that require external tools (`pacstrap`, `debootstrap`,
-/// `systemd-nspawn`) or network access are marked `#[ignore]` and must be
-/// opted into explicitly:
-///
-///   cargo test --test e2e                        # fast, offline tests
-///   cargo test --test e2e -- --include-ignored   # all tests
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 use tempfile::TempDir;
 
-// ---------------------------------------------------------------------------
-// Test harness helpers
-// ---------------------------------------------------------------------------
-
-/// Locate the `dxon` binary built by Cargo.
-///
-/// Integration test binaries live in `target/debug/deps/`, so we pop up to
-/// `target/debug/` and look for the main binary there.
 fn dxon_bin() -> PathBuf {
     let mut path = std::env::current_exe()
         .expect("cannot determine current exe path")
         .canonicalize()
         .expect("cannot canonicalize exe path");
 
-    // Remove the test binary name and the optional "deps" directory.
     path.pop();
     if path.file_name().map(|n| n == "deps").unwrap_or(false) {
         path.pop();
@@ -44,12 +23,8 @@ fn dxon_bin() -> PathBuf {
     path
 }
 
-/// An isolated environment for a single test: a temporary directory used as
-/// both `HOME` and the parent for a dedicated containers directory.
 struct TestEnv {
-    /// Temporary directory acting as the synthetic `HOME`.
     home: TempDir,
-    /// Path used as the `DXON_DIR` (containers store) for this test.
     containers_dir: PathBuf,
 }
 
@@ -64,13 +39,6 @@ impl TestEnv {
         }
     }
 
-    /// Build a `Command` for `dxon` with the test environment pre-configured.
-    ///
-    /// Sets:
-    ///  - `HOME`       → isolated temp directory (config lives here)
-    ///  - `DXON_DIR`   → containers subdirectory inside the temp dir
-    ///  - `NO_COLOR`   → disables ANSI escape codes for easy string matching
-    ///  - clears `SUDO_USER` to avoid privilege escalation surprises
     fn cmd(&self, args: &[&str]) -> Command {
         let mut c = Command::new(dxon_bin());
         c.args(args)
@@ -81,27 +49,21 @@ impl TestEnv {
         c
     }
 
-    /// Run `dxon <args>` and return the raw `Output`.
     fn run(&self, args: &[&str]) -> Output {
         self.cmd(args)
             .output()
             .expect("failed to execute dxon binary")
     }
 
-    /// Return the combined stdout of `dxon <args>` as a `String`.
     fn stdout(&self, args: &[&str]) -> String {
         String::from_utf8_lossy(&self.run(args).stdout).into_owned()
     }
 
-    /// Return the combined stderr of `dxon <args>` as a `String`.
     #[allow(dead_code)]
     fn stderr(&self, args: &[&str]) -> String {
         String::from_utf8_lossy(&self.run(args).stderr).into_owned()
     }
 
-    /// Create a minimal fake container entry (directory + `meta.json`) so
-    /// that read-only commands (`list`, `info`) can be tested without
-    /// actually bootstrapping a real rootfs.
     fn create_fake_container(&self, name: &str, distro: &str) {
         let container_dir = self.containers_dir.join(name);
         let rootfs_dir = container_dir.join("rootfs");
@@ -129,10 +91,6 @@ impl TestEnv {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Basic CLI flag tests
-// ---------------------------------------------------------------------------
-
 #[test]
 fn help_exits_zero() {
     let env = TestEnv::new();
@@ -153,7 +111,6 @@ fn help_exits_zero() {
 fn version_flag_shows_version() {
     let env = TestEnv::new();
     let out = env.run(&["--version"]);
-    // clap exits 0 for --version
     assert!(
         out.status.success(),
         "`dxon --version` should exit 0, got: {}",
@@ -174,17 +131,12 @@ fn version_flag_shows_version() {
 fn no_subcommand_shows_help_and_fails() {
     let env = TestEnv::new();
     let out = env.run(&[]);
-    // clap exits non-zero when no subcommand is given
     assert!(
         !out.status.success(),
         "`dxon` with no args should exit non-zero, got: {}",
         out.status
     );
 }
-
-// ---------------------------------------------------------------------------
-// `dxon list` tests
-// ---------------------------------------------------------------------------
 
 #[test]
 fn list_empty_store_exits_zero() {
@@ -240,10 +192,6 @@ fn list_shows_multiple_fake_containers() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// `dxon info` tests
-// ---------------------------------------------------------------------------
-
 #[test]
 fn info_nonexistent_container_fails() {
     let env = TestEnv::new();
@@ -295,15 +243,10 @@ fn info_fake_container_shows_packages() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// `dxon delete` tests
-// ---------------------------------------------------------------------------
-
 #[test]
 fn delete_nonexistent_container_fails() {
     let env = TestEnv::new();
     let out = env.run(&["delete", "ghost-container"]);
-    // delete.rs calls std::process::exit(1) for missing containers
     assert!(
         !out.status.success(),
         "`dxon delete <missing>` should exit non-zero"
@@ -315,7 +258,6 @@ fn delete_force_removes_fake_container() {
     let env = TestEnv::new();
     env.create_fake_container("disposable", "arch");
 
-    // Confirm the container directory exists before deletion.
     let container_dir = env.containers_dir.join("disposable");
     assert!(
         container_dir.exists(),
@@ -348,10 +290,6 @@ fn delete_force_outputs_confirmation() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// `dxon config` tests
-// ---------------------------------------------------------------------------
-
 #[test]
 fn config_show_exits_zero() {
     let env = TestEnv::new();
@@ -368,7 +306,6 @@ fn config_show_exits_zero() {
 fn config_show_displays_config_path() {
     let env = TestEnv::new();
     let stdout = env.stdout(&["config", "show"]);
-    // Should mention the config file path
     assert!(
         stdout.contains("config.toml") || stdout.contains("dxon"),
         "expected config path or 'dxon' in config show output, got:\n{stdout}"
@@ -392,7 +329,6 @@ fn config_set_known_key_succeeds() {
 fn config_set_persists_and_shows_in_config_show() {
     let env = TestEnv::new();
 
-    // Set the value.
     let set_out = env.run(&["config", "set", "default_distro", "debian"]);
     assert!(
         set_out.status.success(),
@@ -400,7 +336,6 @@ fn config_set_persists_and_shows_in_config_show() {
         String::from_utf8_lossy(&set_out.stderr)
     );
 
-    // Verify the value appears in `config show`.
     let stdout = env.stdout(&["config", "show"]);
     assert!(
         stdout.contains("debian"),
@@ -467,8 +402,6 @@ fn config_set_registry_url_succeeds() {
         String::from_utf8_lossy(&out.stderr)
     );
 
-    // Verify the value was persisted to the config TOML file directly,
-    // since `config show` does not currently display registry_url.
     let config_path = env
         .home
         .path()
@@ -482,10 +415,6 @@ fn config_set_registry_url_succeeds() {
         "expected registry_url persisted in config.toml, got:\n{config_contents}"
     );
 }
-
-// ---------------------------------------------------------------------------
-// `dxon template` tests (require network — ignored by default)
-// ---------------------------------------------------------------------------
 
 #[test]
 #[ignore = "requires network access to the remote registry"]
@@ -505,7 +434,6 @@ fn template_list_exits_zero() {
 fn template_list_shows_templates() {
     let env = TestEnv::new();
     let stdout = env.stdout(&["template", "list"]);
-    // The registry ships with at least rust and python templates.
     assert!(
         stdout.contains("rust") || stdout.contains("python") || stdout.contains("go"),
         "expected at least one well-known template in output, got:\n{stdout}"
@@ -536,16 +464,11 @@ fn template_refresh_exits_zero() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// `dxon create` tests (require system bootstrap tools — ignored in CI)
-// ---------------------------------------------------------------------------
-
 #[test]
 #[ignore = "requires pacstrap / debootstrap / systemd-nspawn and root privileges"]
 fn create_arch_container_full_lifecycle() {
     let env = TestEnv::new();
 
-    // Create
     let create_out = env.run(&["create", "testbox", "--distro", "arch", "--trust"]);
     assert!(
         create_out.status.success(),
@@ -553,16 +476,13 @@ fn create_arch_container_full_lifecycle() {
         String::from_utf8_lossy(&create_out.stderr)
     );
 
-    // Info
     let info_stdout = env.stdout(&["info", "testbox"]);
     assert!(info_stdout.contains("testbox"));
     assert!(info_stdout.contains("arch"));
 
-    // List
     let list_stdout = env.stdout(&["list"]);
     assert!(list_stdout.contains("testbox"));
 
-    // Delete
     let delete_out = env.run(&["delete", "--force", "testbox"]);
     assert!(
         delete_out.status.success(),
@@ -570,7 +490,6 @@ fn create_arch_container_full_lifecycle() {
         String::from_utf8_lossy(&delete_out.stderr)
     );
 
-    // Confirm gone
     let list_after = env.stdout(&["list"]);
     assert!(
         !list_after.contains("testbox"),
@@ -578,18 +497,12 @@ fn create_arch_container_full_lifecycle() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// `--dir` flag / `DXON_DIR` override tests
-// ---------------------------------------------------------------------------
-
 #[test]
 fn dir_flag_uses_specified_directory() {
     let env = TestEnv::new();
-    // Create a second isolated containers directory.
     let alt_dir = env.home.path().join("alt-containers");
     fs::create_dir_all(&alt_dir).unwrap();
 
-    // Manually populate it with a fake container.
     let container_dir = alt_dir.join("altbox");
     let rootfs = container_dir.join("rootfs");
     fs::create_dir_all(&rootfs).unwrap();
@@ -608,7 +521,6 @@ fn dir_flag_uses_specified_directory() {
     );
     fs::write(container_dir.join("meta.json"), meta_json).unwrap();
 
-    // Run `dxon list --dir <alt_dir>` — should find "altbox".
     let out = Command::new(dxon_bin())
         .args(["list", "--dir", alt_dir.to_str().unwrap()])
         .env("HOME", env.home.path())

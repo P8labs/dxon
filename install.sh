@@ -1,7 +1,4 @@
 #!/usr/bin/env sh
-# dXon install script
-# Usage: curl -sSfL https://raw.githubusercontent.com/P8labs/dxon/master/install.sh | sh
-# Or:    wget -qO- https://raw.githubusercontent.com/P8labs/dxon/master/install.sh | sh
 
 set -e
 
@@ -9,7 +6,6 @@ REPO="P8labs/dxon"
 BINARY="dxon"
 INSTALL_DIR="${DXON_INSTALL_DIR:-/usr/local/bin}"
 
-# ── helpers ────────────────────────────────────────────────────────────────────
 
 info()  { printf '\033[0;34m  info\033[0m  %s\n' "$*"; }
 ok()    { printf '\033[0;32m    ok\033[0m  %s\n' "$*"; }
@@ -22,7 +18,6 @@ need_cmd() {
     fi
 }
 
-# ── detect OS ──────────────────────────────────────────────────────────────────
 
 detect_os() {
     OS="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
@@ -33,7 +28,6 @@ detect_os() {
     esac
 }
 
-# ── detect architecture ────────────────────────────────────────────────────────
 
 detect_arch() {
     ARCH="$(uname -m 2>/dev/null)"
@@ -45,7 +39,6 @@ detect_arch() {
     esac
 }
 
-# ── fetch latest release tag ───────────────────────────────────────────────────
 
 latest_version() {
     if command -v curl >/dev/null 2>&1; then
@@ -63,7 +56,6 @@ latest_version() {
     fi
 }
 
-# ── download binary ────────────────────────────────────────────────────────────
 
 download() {
     ASSET="${BINARY}-${VERSION}-${OS}-${ARCH}"
@@ -86,7 +78,6 @@ download() {
     echo "$TMP"
 }
 
-# ── install binary ───────────────────────────────────────────download/v0.3.0/dxon-linux-x86_64──────────────────
 
 install_bin() {
     TMPFILE="$1"
@@ -106,7 +97,6 @@ install_bin() {
     fi
 }
 
-# ── check systemd-nspawn ────────────────────────────────────────────────────────
 
 check_nspawn() {
     if ! command -v systemd-nspawn >/dev/null 2>&1; then
@@ -120,13 +110,11 @@ check_nspawn() {
     fi
 }
 
-# ── main ───────────────────────────────────────────────────────────────────────
 
 main() {
     detect_os
     detect_arch
 
-    # Allow pinning a version via env var
     if [ -n "$DXON_VERSION" ]; then
         VERSION="$DXON_VERSION"
     else

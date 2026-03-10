@@ -12,7 +12,6 @@ pub fn template_cache_dir() -> PathBuf {
     crate::user::resolve_home().join(".dxon").join("templates")
 }
 
-/// Expected cache path for the named template: `~/.dxon/templates/<name>.yaml`.
 fn cached_template_path(name: &str) -> PathBuf {
     template_cache_dir().join(format!("{name}.yaml"))
 }
@@ -239,7 +238,6 @@ mod tests {
 
     #[test]
     fn list_cached_names_returns_empty_when_dir_absent() {
-        // Should not panic even when the cache directory doesn't exist.
         let _ = list_cached_names();
     }
 
@@ -251,7 +249,6 @@ mod tests {
         std::fs::write(cache.join("rust.yaml"), "schema: dxon/v1\nname: rust\n").unwrap();
         std::fs::write(cache.join("nodejs.yaml"), "schema: dxon/v1\nname: nodejs\n").unwrap();
 
-        // Validate that the directory contains both files.
         let files: std::collections::HashSet<_> = std::fs::read_dir(&cache)
             .unwrap()
             .flatten()
@@ -297,7 +294,6 @@ mod tests {
 
     #[test]
     fn json_index_accepts_optional_fields() {
-        // tags and distros are optional; path is required
         let src = r#"
 {
   "templates": [
@@ -434,7 +430,6 @@ mod tests {
 
     #[test]
     fn resolve_path_from_index_finds_correct_entry() {
-        // This tests the logic inline (no network) using a synthetic index.
         let entries = vec![
             TemplateEntry {
                 name: "nodejs".into(),

@@ -27,6 +27,8 @@ pub struct TemplateMeta {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BaseConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub distro: Option<String>,
     #[serde(default)]
     pub distros: Vec<String>,
     #[serde(default)]
@@ -75,6 +77,13 @@ impl DxTemplate {
             .map_err(|e| format!("YAML parse error: {e}"))?;
         yaml.validate()?;
         Ok(yaml.into_dx_template())
+    }
+
+    pub fn pinned_distro(&self) -> Option<&str> {
+        self.base
+            .distro
+            .as_deref()
+            .or_else(|| self.base.distros.first().map(|s| s.as_str()))
     }
 }
 
@@ -213,5 +222,32 @@ env = { HOME = "/root", PATH = "/usr/bin" }
         let t = DxTemplate::from_toml(src).unwrap();
         assert_eq!(t.runtime.env.get("HOME"), Some(&"/root".to_string()));
         assert_eq!(t.runtime.env.get("PATH"), Some(&"/usr/bin".to_string()));
+    }
+
+    #[test]
+    fn pinned_distro_prefers_explicit_base_distro() {
+        let src = r#"
+[meta]
+name = "x"
+
+[base]
+distro = "debian"
+distros = ["arch"]
+"#;
+        let t = DxTemplate::from_toml(src).unwrap();
+        assert_eq!(t.pinned_distro(), Some("debian"));
+    }
+
+    #[test]
+    fn pinned_distro_falls_back_to_first_distros_entry() {
+        let src = r#"
+[meta]
+name = "x"
+
+[base]
+distros = ["alpine"]
+"#;
+        let t = DxTemplate::from_toml(src).unwrap();
+        assert_eq!(t.pinned_distro(), Some("alpine"));
     }
 }

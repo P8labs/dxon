@@ -141,6 +141,7 @@ impl YamlTemplate {
         };
 
         let base = BaseConfig {
+            distro: self.base.clone(),
             distros: self.base.into_iter().collect(),
             packages: Vec::new(),
             packages_by_distro: self.packages,
@@ -339,5 +340,18 @@ steps:
         assert_eq!(dx.steps[0].tools, vec!["nodejs"]);
         assert_eq!(dx.steps[0].commands, vec!["node --version"]);
         assert_eq!(dx.steps[0].when["pm"], "npm");
+    }
+
+    #[test]
+    fn into_dx_template_maps_base_distro() {
+        let src = r#"
+schema: dxon/v1
+name: myenv
+base: debian
+"#;
+        let yaml = YamlTemplate::from_yaml(src).unwrap();
+        let dx = yaml.into_dx_template();
+        assert_eq!(dx.base.distro, Some("debian".to_string()));
+        assert_eq!(dx.pinned_distro(), Some("debian"));
     }
 }

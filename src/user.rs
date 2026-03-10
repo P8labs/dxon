@@ -11,7 +11,6 @@ pub fn is_root() -> bool {
     get_current_uid() == 0
 }
 
-/// Information about the host user that should be mapped into the container.
 #[derive(Debug, Clone)]
 pub struct HostUser {
     pub username: String,
@@ -19,10 +18,6 @@ pub struct HostUser {
     pub gid: u32,
 }
 
-/// Detect the effective host user.
-///
-/// When running under `sudo`, returns the original (pre-sudo) user so that
-/// container ownership matches the person who invoked dxon, not root.
 pub fn detect_host_user() -> HostUser {
     if is_root() {
         if let Ok(sudo_user) = env::var("SUDO_USER") {
@@ -36,7 +31,6 @@ pub fn detect_host_user() -> HostUser {
                 }
             }
         }
-        // Truly running as root (not via sudo).
         return HostUser {
             username: "root".to_string(),
             uid: 0,
@@ -50,7 +44,6 @@ pub fn detect_host_user() -> HostUser {
     let username = if let Some(user) = get_user_by_uid(uid) {
         user.name().to_string_lossy().into_owned()
     } else {
-        // Fallback: walk /etc/passwd manually.
         std::fs::read_to_string("/etc/passwd")
             .ok()
             .and_then(|contents| {

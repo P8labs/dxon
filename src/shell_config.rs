@@ -103,10 +103,6 @@ fn config_files_for(shell: &str, host_home: &Path) -> Vec<(PathBuf, PathBuf)> {
         .collect()
 }
 
-/// Copy shell config files from the host into the container.
-///
-/// `container_home_abs` is the absolute path of the user's home directory
-/// *inside* the container, e.g. `/home/priyanshu` or `/root`.
 pub fn apply_copy(
     rootfs: &Path,
     host_home: &Path,
@@ -196,11 +192,6 @@ fn copy_file_with_path_sub(
     user::privileged_write(dst, &content)
 }
 
-/// Build `--bind=` argument strings for systemd-nspawn to live-mount shell
-/// config files from the host into `container_home_abs` inside the container.
-///
-/// `container_home_abs` is the absolute path of the user's home directory
-/// *inside* the container, e.g. `/home/priyanshu` or `/root`.
 pub fn bind_args(host_home: &Path, shell: &str, container_home_abs: &Path) -> Vec<String> {
     let files = config_files_for(shell, host_home);
 
