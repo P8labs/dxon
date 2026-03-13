@@ -1,7 +1,7 @@
 use anyhow::Result;
 use colored::Colorize;
 
-use crate::template::{builtin, registry};
+use crate::template::registry;
 
 pub fn list(registry_url: &str) -> Result<()> {
     let cached = registry::list_cached_names();
@@ -60,14 +60,6 @@ pub fn list(registry_url: &str) -> Result<()> {
 
             println!();
             println!("  {}:", "well-known templates".dimmed());
-            for (name, desc) in builtin::list_descriptions() {
-                let marker = if cached_set.contains(name) {
-                    " (cached)".dimmed().to_string()
-                } else {
-                    String::new()
-                };
-                println!("  {:<12} {}{}", name.cyan(), desc.dimmed(), marker);
-            }
         }
     }
 

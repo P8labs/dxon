@@ -1,4 +1,3 @@
-pub mod builtin;
 pub mod registry;
 pub mod remote;
 pub mod spec;
@@ -88,16 +87,6 @@ pub fn parse_by_extension(ext: &str, src: &str, label: &str) -> Result<DxTemplat
     match ext {
         "yaml" | "yml" => DxTemplate::from_yaml(src)
             .map_err(|e| DxonError::InvalidTemplate(format!("{label}: {e}")).into()),
-        "dx" => {
-            eprintln!(
-                "{} template '{}' uses the deprecated .dx (TOML) format.\n  \
-                 Migrate to YAML (dxon/v1) — see TEMPLATE_SPEC.md for details.",
-                "warning:".yellow().bold(),
-                label
-            );
-            DxTemplate::from_toml(src)
-                .map_err(|e| DxonError::InvalidTemplate(format!("{label}: {e}")).into())
-        }
         _ => DxTemplate::from_yaml(src)
             .or_else(|_| {
                 DxTemplate::from_toml(src)

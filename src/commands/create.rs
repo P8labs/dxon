@@ -14,7 +14,6 @@ use crate::runtime::nspawn::{
 };
 use crate::runtime::packages::translate_list;
 use crate::template;
-use crate::template::builtin;
 use crate::template::spec::{DxTemplate, Step};
 use crate::user;
 
@@ -52,34 +51,7 @@ pub fn run(store: &ContainerStore, cfg: &mut Config, args: CreateArgs) -> Result
             check_trust(&source, args.trust, &theme)?;
             (Some(loaded), Some(t.clone()))
         }
-        None => {
-            let mut options: Vec<String> = builtin::list_descriptions()
-                .iter()
-                .map(|(n, d)| format!("{n:8}  {d}"))
-                .collect();
-            options.push("none".to_string());
-
-            let default_tmpl_idx = cfg
-                .default_template
-                .as_deref()
-                .and_then(|t| builtin::BUILTIN_NAMES.iter().position(|&b| b == t))
-                .unwrap_or(options.len() - 1);
-
-            let idx = Select::with_theme(&theme)
-                .with_prompt("Template (optional)")
-                .items(&options)
-                .default(default_tmpl_idx)
-                .interact()?;
-
-            if idx < builtin::BUILTIN_NAMES.len() {
-                let bname = builtin::BUILTIN_NAMES[idx];
-                let (loaded, source) = template::resolve(bname, cfg.effective_registry_url())?;
-                check_trust(&source, args.trust, &theme)?;
-                (Some(loaded), Some(bname.to_string()))
-            } else {
-                (None, None)
-            }
-        }
+        None => (None, None),
     };
 
     let distro_choices = &["arch", "debian", "alpine"];
