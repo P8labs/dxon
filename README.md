@@ -1,5 +1,9 @@
 # dXon
 
+> [!NOTE]  
+> Use base distro same as host currently only that is supported. I am working to fix the combinations. You guys can try and raise Issue if it is not working.
+> Thanks
+
 small tool to spin up dev containers quickly. nothing fancy. just simple environments so your host system doesn't get polluted.
 
 the idea is pretty straightforward: instead of installing a bunch of language stuff directly on your machine, you create a container for it and work inside that. keeps things clean and reproducible.
