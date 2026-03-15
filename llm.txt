@@ -31,8 +31,7 @@ dXon is Linux-only. macOS and Windows are not supported.
 - **Template**: a YAML file (schema: dxon/v1) that describes which
   packages to install and which setup commands to run inside a fresh
   container.
-- **Registry**: a public index of community templates at
-  https://github.com/P8labs/dxon-registry
+- **Registry**: a public index of community templates at https://github.com/P8labs/dxon-registry
 - **Distro**: the base Linux distribution bootstrapped into the container.
   Supported values: arch | debian | alpine
 
@@ -210,7 +209,7 @@ Re-fetch and cache the registry index.
 Location: ~/.config/dxon/config.toml
 
   containers_dir  = "~/.dxon/containers"
-  registry_url    = "https://raw.githubusercontent.com/P8labs/dxon-registry/main/registry.json"
+  registry_url    = "https://raw.githubusercontent.com/P8labs/dxon-registry/master/registry.json"
   default_distro  = "arch"        # optional
   default_shell   = "zsh"         # optional
   default_template = "rust"       # optional

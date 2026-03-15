@@ -4,8 +4,6 @@
 - [x] simple install script
 - [x] Add docs for AI agents
 
-
-
 [06/03/2026]
 
 - [x] basic cli commands done (create, delete, list, info, enter)

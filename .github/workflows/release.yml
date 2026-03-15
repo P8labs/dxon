@@ -15,13 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Job 1 (workflow_dispatch only):
-  #   • Validates the version string.
-  #   • Bumps the version in Cargo.toml and Cargo.lock.
-  #   • Commits the change and pushes an annotated tag.
-  # On a plain tag push this job is skipped automatically.
-  # ---------------------------------------------------------------------------
+
   prepare:
     name: Bump version & create tag
     runs-on: ubuntu-latest
@@ -79,12 +73,6 @@ jobs:
           git push origin "$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-  # ---------------------------------------------------------------------------
-  # Job 2: Cross-compile release binaries.
-  # Runs on:
-  #   • A plain tag push  (push: tags: v*)
-  #   • workflow_dispatch after 'prepare' succeeds
-  # ---------------------------------------------------------------------------
   build:
     name: Build (${{ matrix.target }})
     runs-on: ubuntu-latest
@@ -104,7 +92,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # dispatch: check out the tag we just pushed; tag push: GITHUB_REF is the tag.
           ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', github.event.inputs.version) || github.ref }}
 
       - name: Setup Docker Buildx
@@ -141,9 +128,6 @@ jobs:
           name: dxon-${{ matrix.target }}
           path: release/*
 
-  # ---------------------------------------------------------------------------
-  # Job 3: Publish the GitHub Release with all artifacts.
-  # ---------------------------------------------------------------------------
   release:
     name: Create GitHub Release
     needs: [build]
