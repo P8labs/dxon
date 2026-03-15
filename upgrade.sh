@@ -6,8 +6,8 @@ REPO="P8labs/dxon"
 BINARY="dxon"
 
 
-info()  { printf '\033[0;34m  info\033[0m  %s\n' "$*"; }
-ok()    { printf '\033[0;32m    ok\033[0m  %s\n' "$*"; }
+info()  { printf '\033[0;34m  info\033[0m  %s\n' "$*" >&2; }
+ok()    { printf '\033[0;32m    ok\033[0m  %s\n' "$*" >&2; }
 warn()  { printf '\033[0;33m  warn\033[0m  %s\n' "$*" >&2; }
 error() { printf '\033[0;31m error\033[0m  %s\n' "$*" >&2; exit 1; }
 
@@ -75,7 +75,6 @@ download_and_install() {
     URL="https://github.com/${REPO}/releases/download/${LATEST}/${ASSET}"
 
     TMP="$(mktemp)"
-    trap 'rm -f "$TMP"' EXIT INT TERM
 
     info "downloading ${BINARY} ${LATEST} (${OS}/${ARCH})"
 
