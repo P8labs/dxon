@@ -65,7 +65,7 @@ show_info() {
     echo -e "${YELLOW}Binary:${NC}      dxon"
     echo -e "${YELLOW}Platform:${NC}    Linux (x86_64, ARM64, ARMv7)"
     echo -e "${YELLOW}Language:${NC}    Rust"
-    echo -e "${YELLOW}Docs:${NC}        https://p8labs.github.io/dxon"
+    echo -e "${YELLOW}Docs:${NC}        https://dxon.p8labs.in"
     echo -e "${BLUE}═══════════════════════════════════════════════════${NC}\n"
 }
 

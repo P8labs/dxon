@@ -12,8 +12,7 @@ dXon uses system tools under the hood like `systemd-nspawn`, `pacstrap`, `deboot
 
 still pretty early stage. expect things to break sometimes.
 
-**[full documentation → https://p8labs.github.io/dxon](https://p8labs.github.io/dxon)**
-
+**[full documentation → https://dxon.p8labs.in](https://dxon.p8labs.in)**
 
 ## what it does
 
@@ -40,7 +39,6 @@ config lives here:
 
 you can change those if you want.
 
-
 ## quick example
 
 create a node container:
@@ -65,7 +63,7 @@ remove one:
 
 ```
 dxon delete node-dev
-````
+```
 
 nothing too magical.
 
@@ -96,10 +94,9 @@ packages:
 
 steps:
   - run: corepack enable
-````
+```
 
 templates can also ask you stuff during creation (like which package manager to use).
-
 
 ## template registry
 
@@ -109,11 +106,11 @@ we keep a public registry of templates here:
 
 that's where common environments live:
 
-* node
-* rust
-* python
-* go
-* c/c++
+- node
+- rust
+- python
+- go
+- c/c++
 
 more will be added later probably.
 
@@ -121,33 +118,30 @@ dXon can pull templates directly from there so you don't have to copy files arou
 
 you can also write your own templates if you want.
 
-
 ## why this exists
 
 sometimes docker is too heavy for quick dev environments. sometimes installing stuff directly on your system becomes messy.
 
 dXon is trying to be the middle ground:
 
-* lightweight containers
-* quick environment setup
-* no system pollution
-* simple templates
+- lightweight containers
+- quick environment setup
+- no system pollution
+- simple templates
 
 that's pretty much it.
-
 
 ## future stuff (maybe)
 
 things we might add later:
 
-* template registry improvements
-* ai workflows / automation
-* MCP integration
-* project-based environments
-* better container lifecycle commands
+- template registry improvements
+- ai workflows / automation
+- MCP integration
+- project-based environments
+- better container lifecycle commands
 
 but yeah, one step at a time.
-
 
 ## project
 
@@ -155,8 +149,6 @@ dXon is built and maintained by **P8labs Team**.
 
 it's an experiment right now but we'll see where it goes.
 
-
 ## license
 
 MIT probably. will sort that out soon.
-

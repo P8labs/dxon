@@ -1,5 +1,5 @@
 # dXon — LLM / AI Agent Reference
-# https://p8labs.github.io/dxon
+# https://dxon.p8labs.in
 # Source: https://github.com/P8labs/dxon
 # Version: 0.2.0  (March 2026)
 #
@@ -385,8 +385,8 @@ A: Yes. dxon config set registry_url https://your-host/registry.json
 
 ## Links
 
-  Docs:          https://p8labs.github.io/dxon
+  Docs:          https://dxon.p8labs.in
   Source:        https://github.com/P8labs/dxon
   Registry:      https://github.com/P8labs/dxon-registry
   Issues:        https://github.com/P8labs/dxon/issues
-  AI agent docs: https://p8labs.github.io/dxon/ai/
+  AI agent docs: https://dxon.p8labs.in/ai/

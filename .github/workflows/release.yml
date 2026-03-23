@@ -15,7 +15,6 @@ permissions:
   contents: write
 
 jobs:
-
   prepare:
     name: Bump version & create tag
     runs-on: ubuntu-latest
@@ -175,7 +174,7 @@ jobs:
 
             ### Installation 
 
-            See the [documentation](https://p8labs.github.io/dxon) for more information.
+            See the [documentation](https://dxon.p8labs.in) for more information.
             See Template Registry [(dxon-registry)](https://github.com/P8labs/dxon-registry)
 
             ---

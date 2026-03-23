@@ -1,6 +1,6 @@
 site_name: dXon
 site_description: dXon – lightweight development container manager
-site_url: https://p8labs.github.io/dxon
+site_url: https://dxon.p8labs.in
 
 repo_name: P8labs/dxon
 repo_url: https://github.com/P8labs/dxon
@@ -39,10 +39,9 @@ theme:
     - search.share
     - content.code.copy
     - content.code.annotate
-  
+
 extra_css:
   - stylesheets/extra.css
-
 
 plugins:
   - search
@@ -74,7 +73,6 @@ nav:
   - Configuration: configuration.md
   - Security: security.md
   - AI / Agents: ai.md
-
 
 extra:
   version: 1.0

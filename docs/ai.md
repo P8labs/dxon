@@ -8,14 +8,14 @@ A machine-readable condensed version of this information is also available at [`
 
 ## Key facts
 
-| Item | Value |
-|---|---|
-| Binary | `dxon` |
-| Supported OS | Linux only (requires `systemd-nspawn`) |
-| Container storage | `~/.dxon/containers/` |
-| Config file | `~/.config/dxon/config.toml` (TOML) |
-| Exit code on success | `0` |
-| Exit code on error | `1` (message on stderr, prefixed `error:`) |
+| Item                 | Value                                                           |
+| -------------------- | --------------------------------------------------------------- |
+| Binary               | `dxon`                                                          |
+| Supported OS         | Linux only (requires `systemd-nspawn`)                          |
+| Container storage    | `~/.dxon/containers/`                                           |
+| Config file          | `~/.config/dxon/config.toml` (TOML)                             |
+| Exit code on success | `0`                                                             |
+| Exit code on error   | `1` (message on stderr, prefixed `error:`)                      |
 | Non-interactive flag | All `create` prompts are bypassed by supplying flags explicitly |
 
 ---
@@ -157,13 +157,13 @@ dxon template refresh
 
 ### Official templates
 
-| Name | Description |
-|---|---|
+| Name     | Description                                                    |
+| -------- | -------------------------------------------------------------- |
 | `nodejs` | Node.js; prompts for package manager (npm / pnpm / yarn / bun) |
-| `python` | Python 3 + pip |
-| `rust` | Rust via rustup + clippy + rustfmt |
-| `go` | Go development environment |
-| `cpp` | C/C++ build tools + optional cmake / ninja |
+| `python` | Python 3 + pip                                                 |
+| `rust`   | Rust via rustup + clippy + rustfmt                             |
+| `go`     | Go development environment                                     |
+| `cpp`    | C/C++ build tools + optional cmake / ninja                     |
 
 ---
 
@@ -181,15 +181,15 @@ Set a value:
 dxon config set <key> <value>
 ```
 
-| Key | Default | Description |
-|---|---|---|
-| `containers_dir` | `~/.dxon/containers` | Where container rootfs trees are stored |
-| `registry_url` | Official registry JSON URL | URL of the registry index |
-| `default_distro` | _(none)_ | Pre-selects distro in interactive prompt |
-| `default_shell` | _(none)_ | Pre-selects shell in interactive prompt |
-| `default_template` | _(none)_ | Pre-selects template in interactive prompt |
-| `copy_shell_config` | _(none)_ | Pre-selects shell-config mode (`copy`\|`bind`) |
-| `default_editor` | _(none)_ | Editor binary for `dxon open` |
+| Key                 | Default                    | Description                                    |
+| ------------------- | -------------------------- | ---------------------------------------------- |
+| `containers_dir`    | `~/.dxon/containers`       | Where container rootfs trees are stored        |
+| `registry_url`      | Official registry JSON URL | URL of the registry index                      |
+| `default_distro`    | _(none)_                   | Pre-selects distro in interactive prompt       |
+| `default_shell`     | _(none)_                   | Pre-selects shell in interactive prompt        |
+| `default_template`  | _(none)_                   | Pre-selects template in interactive prompt     |
+| `copy_shell_config` | _(none)_                   | Pre-selects shell-config mode (`copy`\|`bind`) |
+| `default_editor`    | _(none)_                   | Editor binary for `dxon open`                  |
 
 Example — redirect container storage to a separate drive:
 
@@ -213,7 +213,7 @@ description: Custom Node.js environment
 base: arch
 
 packages:
-  arch:   [git, curl, nodejs, npm]
+  arch: [git, curl, nodejs, npm]
   debian: [git, curl, ca-certificates, nodejs, npm]
   alpine: [git, curl, ca-certificates, nodejs, npm]
 
@@ -249,17 +249,17 @@ dxon create myenv --template /path/to/myenv.yaml --trust
 
 ### Template field reference (quick)
 
-| Field | Type | Notes |
-|---|---|---|
-| `schema` | string | Must be `dxon/v1` |
-| `name` | string | Short identifier, no spaces |
-| `description` | string | Optional one-line summary |
-| `base` | string | Suggested distro: `arch` \| `debian` \| `alpine` |
-| `packages` | map | Per-distro raw package names, keys: `arch`, `debian`, `alpine` |
-| `env` | map | Env vars set at container enter time |
-| `options` | list | Interactive prompts (`id`, `prompt`, `choices`, `default`) |
-| `steps` | list | Ordered commands (`name`, `run`, `tools`, `distro`, `when`) |
-| `run` | list | Commands run after all steps |
+| Field         | Type   | Notes                                                          |
+| ------------- | ------ | -------------------------------------------------------------- |
+| `schema`      | string | Must be `dxon/v1`                                              |
+| `name`        | string | Short identifier, no spaces                                    |
+| `description` | string | Optional one-line summary                                      |
+| `base`        | string | Suggested distro: `arch` \| `debian` \| `alpine`               |
+| `packages`    | map    | Per-distro raw package names, keys: `arch`, `debian`, `alpine` |
+| `env`         | map    | Env vars set at container enter time                           |
+| `options`     | list   | Interactive prompts (`id`, `prompt`, `choices`, `default`)     |
+| `steps`       | list   | Ordered commands (`name`, `run`, `tools`, `distro`, `when`)    |
+| `run`         | list   | Commands run after all steps                                   |
 
 Logical `tools` names (resolved per distro automatically):
 `git`, `curl`, `wget`, `make`, `cmake`, `ninja`, `gcc`, `clang`,
@@ -332,12 +332,12 @@ dxon create myenv --template mytemplate --trust
 
 dXon needs these tools on the **host** machine:
 
-| Tool | Required for | Install command |
-|---|---|---|
-| `systemd-nspawn` | Running any container | `apt install systemd-container` / already in `systemd` |
-| `pacstrap` | Arch Linux containers | `apt install arch-install-scripts` or `pacman -S arch-install-scripts` |
-| `debootstrap` | Debian / Ubuntu containers | `apt install debootstrap` / `pacman -S debootstrap` |
-| `curl` or `wget` | Alpine containers | `apt install curl` / `pacman -S curl` |
+| Tool             | Required for               | Install command                                                        |
+| ---------------- | -------------------------- | ---------------------------------------------------------------------- |
+| `systemd-nspawn` | Running any container      | `apt install systemd-container` / already in `systemd`                 |
+| `pacstrap`       | Arch Linux containers      | `apt install arch-install-scripts` or `pacman -S arch-install-scripts` |
+| `debootstrap`    | Debian / Ubuntu containers | `apt install debootstrap` / `pacman -S debootstrap`                    |
+| `curl` or `wget` | Alpine containers          | `apt install curl` / `pacman -S curl`                                  |
 
 dXon prints a clear diagnostic if a required tool is missing.
 
@@ -364,10 +364,10 @@ dxon create env --distro arch --template https://my.host/env.yaml --trust
 
 ## Useful references
 
-| Resource | URL |
-|---|---|
-| Full documentation | <https://p8labs.github.io/dxon> |
+| Resource                   | URL                                                            |
+| -------------------------- | -------------------------------------------------------------- |
+| Full documentation         | <https://dxon.p8labs.in>                                       |
 | Machine-readable reference | <https://raw.githubusercontent.com/P8labs/dxon/master/llm.txt> |
-| Source code | <https://github.com/P8labs/dxon> |
-| Template registry | <https://github.com/P8labs/dxon-registry> |
-| Issue tracker | <https://github.com/P8labs/dxon/issues> |
+| Source code                | <https://github.com/P8labs/dxon>                               |
+| Template registry          | <https://github.com/P8labs/dxon-registry>                      |
+| Issue tracker              | <https://github.com/P8labs/dxon/issues>                        |
